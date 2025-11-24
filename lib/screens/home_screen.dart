@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/app_data.dart'; 
-import 'add_food.dart';
-import 'login_screen.dart'; 
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,8 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout), 
             onPressed: () {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
-            }
+           Navigator.pushReplacementNamed(context, '/login');
+            },
           ),
         ],
       ),
@@ -120,11 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               children: [
                 Expanded(child: _buildMenuButton(Icons.restaurant_menu, "Catat Makan", () async {
-                  await Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => const AddFoodScreen())
-                  );
-                  setState(() {}); 
+                  await Navigator.pushNamed(context, '/add_food'); // Tetap pake await
+                  setState(() {});
                 })),
                 const SizedBox(width: 15),
                 Expanded(child: _buildMenuButton(Icons.bar_chart, "Grafik", () {

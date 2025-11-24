@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/app_data.dart';
-import 'home_screen.dart';
+
 
 class InputProfilScreen extends StatefulWidget {
   const InputProfilScreen({super.key});
@@ -58,10 +58,7 @@ class _InputProfilScreenState extends State<InputProfilScreen> {
       appData.targetKalori = (bmr * activityFactor).toInt();
 
       // Navigasi
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+   Navigator.pushReplacementNamed(context, '/home');
     }
   }
 

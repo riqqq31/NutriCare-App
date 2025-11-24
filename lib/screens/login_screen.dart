@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'input_profil_screen.dart'; // Kalau dia mau pindah ke halaman profil
 
 // --- HALAMAN 0: LOGIN SCREEN (Halaman Baru) ---
 class LoginScreen extends StatefulWidget {
@@ -22,10 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (user == "admin" && pass == "123") {
       // Kalau bener, masuk ke Input Profil
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const InputProfilScreen()),
-      );
+   Navigator.pushReplacementNamed(context, '/input_profil');
     } else {
       // Kalau salah, munculin pesan error
       ScaffoldMessenger.of(context).showSnackBar(

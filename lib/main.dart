@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
 import 'screens/add_food.dart';
+import 'screens/home_screen.dart';
 import 'screens/input_profil_screen.dart';
 import 'screens/login_screen.dart';
 
 
-
-// ==========================================
-// 1. DUMMY DATA & STATE (Sederhana)
-// ==========================================
-
-
-// ==========================================
-// 2. MAIN ENTRY POINT
-// ==========================================
 void main() {
   runApp(const NutriCareApp());
 }
@@ -52,10 +44,13 @@ class NutriCareApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/home',
+    initialRoute: '/login', 
+      
+
       routes: {
-        '/': (context) => const InputProfilScreen(),
-        '/home': (context) => const LoginScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/input_profil': (context) => const InputProfilScreen(),
+        '/home': (context) => const HomeScreen(),
         '/add_food': (context) => const AddFoodScreen(),
       },
     );

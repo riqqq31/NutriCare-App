@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/database_helper.dart';
+import '../models/app_data.dart';
 
-// --- HALAMAN 0: LOGIN SCREEN (Halaman Baru) ---
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -11,26 +12,138 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isObscure = true; // Buat ngumpetin password
+  bool _isObscure = true;
 
-  void _login() {
-    // LOGIKA LOGIN "TIPU-TIPU"
-    // Di dunia nyata, ini ngecek ke Database/API
+  // --- LOGIKA LOGIN UTAMA ---
+  void _login() async {
     String user = _usernameController.text;
     String pass = _passwordController.text;
 
-    if (user == "admin" && pass == "123") {
-      // Kalau bener, masuk ke Input Profil
-   Navigator.pushReplacementNamed(context, '/input_profil');
-    } else {
-      // Kalau salah, munculin pesan error
+    if (user.isEmpty || pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Username atau Password salah! (Coba: admin / 123)"),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text("Isi username & password dulu!")),
       );
+      return;
     }
+
+    // 1. Cek ke Database SQLite
+    var userData = await DatabaseHelper.instance.loginUser(user, pass);
+
+    if (userData != null) {
+      // BERHASIL LOGIN!
+
+      // 2. Simpan Data User ke AppData (Session)
+      final appData = AppData();
+      appData.activeUserId = userData['id'];
+      appData.nama = userData['nama'] ?? user;
+      appData.gender = userData['gender'] ?? "Laki-laki";
+      appData.usia = userData['usia'] ?? 25;
+      appData.beratBadan = (userData['berat'] ?? 0).toDouble();
+      appData.tinggiBadan = (userData['tinggi'] ?? 0).toDouble();
+      appData.aktivitas = userData['aktivitas'] ?? "Jarang Olahraga";
+
+      // Hitung ulang target kalori (TDEE) kalau data ada
+      if (appData.beratBadan > 0) {
+        _hitungUlangTargetKalori(appData);
+      }
+
+      // 3. CEK: Profil udah diisi belum?
+      if (appData.beratBadan == 0 || appData.tinggiBadan == 0) {
+        // Belum isi profil -> Lempar ke Halaman Input Profil
+        if (mounted) Navigator.pushReplacementNamed(context, '/input_profil');
+      } else {
+        // Udah lengkap -> Langsung ke Home
+        if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      }
+    } else {
+      // Gagal
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Username atau Password salah!"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _hitungUlangTargetKalori(AppData appData) {
+    double bmr =
+        (10 * appData.beratBadan) +
+        (6.25 * appData.tinggiBadan) -
+        (5 * appData.usia);
+    if (appData.gender == "Laki-laki")
+      bmr += 5;
+    else
+      bmr -= 161;
+
+    // Faktor Aktivitas Sederhana (Default Sedenter)
+    double factor = 1.2;
+    if (appData.aktivitas.contains("Ringan")) factor = 1.375;
+    if (appData.aktivitas.contains("Sedang")) factor = 1.55;
+    if (appData.aktivitas.contains("Berat")) factor = 1.725;
+
+    appData.targetKalori = (bmr * factor).toInt();
+  }
+
+  // --- LOGIKA DAFTAR AKUN BARU ---
+  void _showRegisterDialog() {
+    final userRegController = TextEditingController();
+    final passRegController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Buat Akun Baru"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: userRegController,
+              decoration: const InputDecoration(labelText: "Username Baru"),
+            ),
+            TextField(
+              controller: passRegController,
+              decoration: const InputDecoration(labelText: "Password Baru"),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              String u = userRegController.text;
+              String p = passRegController.text;
+              if (u.isNotEmpty && p.isNotEmpty) {
+                int id = await DatabaseHelper.instance.registerUser(u, p);
+                if (id != -1) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Akun jadi! Silakan Login."),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Username sudah dipakai!"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text("Daftar"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -43,47 +156,52 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo / Icon Gede
-              const Icon(Icons.local_dining_rounded, size: 100, color: Colors.green),
+              const Icon(
+                Icons.local_dining_rounded,
+                size: 80,
+                color: Colors.green,
+              ),
               const SizedBox(height: 20),
               const Text(
                 "NutriCare",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
               ),
               const SizedBox(height: 40),
-              
-              // Input Username
+
               TextField(
                 controller: _usernameController,
                 decoration: InputDecoration(
                   labelText: "Username",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.person),
                 ),
               ),
               const SizedBox(height: 16),
-              
-              // Input Password
               TextField(
                 controller: _passwordController,
-                obscureText: _isObscure, // Biar jadi bintang-bintang *****
+                obscureText: _isObscure,
                 decoration: InputDecoration(
                   labelText: "Password",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    icon: Icon(_isObscure ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () {
-                      setState(() {
-                        _isObscure = !_isObscure;
-                      });
-                    },
+                    icon: Icon(
+                      _isObscure ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () => setState(() => _isObscure = !_isObscure),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // Tombol Login
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -92,14 +210,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text("MASUK", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "MASUK",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              const Text("Hint: User: admin, Pass: 123", style: TextStyle(color: Colors.grey)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Belum punya akun? "),
+                  TextButton(
+                    onPressed: _showRegisterDialog,
+                    child: const Text("Daftar di sini"),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

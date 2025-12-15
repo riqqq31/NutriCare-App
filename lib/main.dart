@@ -3,7 +3,7 @@ import 'screens/add_food.dart';
 import 'screens/home_screen.dart';
 import 'screens/input_profil_screen.dart';
 import 'screens/login_screen.dart';
-
+import 'screens/chart_screen.dart';
 
 void main() {
   runApp(const NutriCareApp());
@@ -27,7 +27,9 @@ class NutriCareApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
         cardTheme: CardThemeData(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 2,
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
         ),
@@ -35,23 +37,28 @@ class NutriCareApp extends StatelessWidget {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
       ),
-    initialRoute: '/login', 
-      
+      initialRoute: '/login',
 
       routes: {
         '/login': (context) => const LoginScreen(),
         '/input_profil': (context) => const InputProfilScreen(),
         '/home': (context) => const HomeScreen(),
         '/add_food': (context) => const AddFoodScreen(),
+        '/chart': (context) => const ChartScreen(),
       },
     );
   }

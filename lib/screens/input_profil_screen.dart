@@ -48,10 +48,11 @@ class _InputProfilScreenState extends State<InputProfilScreen> {
           (10 * appData.beratBadan) +
           (6.25 * appData.tinggiBadan) -
           (5 * appData.usia);
-      if (appData.gender == "Laki-laki")
+      if (appData.gender == "Laki-laki") {
         bmr += 5;
-      else
+      } else {
         bmr -= 161;
+      }
       double activityFactor = _activityLevels[_selectedActivity] ?? 1.2;
       appData.targetKalori = (bmr * activityFactor).toInt();
 

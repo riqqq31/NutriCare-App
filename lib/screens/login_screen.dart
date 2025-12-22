@@ -73,10 +73,11 @@ class _LoginScreenState extends State<LoginScreen> {
         (10 * appData.beratBadan) +
         (6.25 * appData.tinggiBadan) -
         (5 * appData.usia);
-    if (appData.gender == "Laki-laki")
+    if (appData.gender == "Laki-laki") {
       bmr += 5;
-    else
+    } else {
       bmr -= 161;
+    }
 
     // Faktor Aktivitas Sederhana (Default Sedenter)
     double factor = 1.2;

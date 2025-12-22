@@ -132,18 +132,37 @@ class _HomeScreenState extends State<HomeScreen> {
             // MENU CEPAT
             const Text("Menu Cepat", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
-            Row(
+            Column(
               children: [
-                Expanded(child: _buildMenuButton(Icons.restaurant_menu, "Catat Makan", () async {
-                    await Navigator.pushNamed(context, '/add_food');
-                    _loadDataFromDB(); // RELOAD OTOMATIS pas balik
-                })),
-                const SizedBox(width: 15),
-                Expanded(child: _buildMenuButton(Icons.bar_chart, "Grafik", () {
-                    Navigator.pushNamed(context, '/chart');
-                })),
+                Row(
+                  children: [
+                    _buildMenuButton(Icons.restaurant_menu, "Catat Makan", () async {
+                      await Navigator.pushNamed(context, '/add_food');
+                      _loadDataFromDB(); // RELOAD OTOMATIS pas balik
+                    }),
+                    const SizedBox(width: 15),
+                    _buildMenuButton(Icons.bar_chart, "Grafik", () {
+                      Navigator.pushNamed(context, '/chart');
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                Row(
+                  children: [
+                    _buildMenuButton(Icons.article, "Artikel", () {
+                      Navigator.pushNamed(context, '/articles');
+                    }),
+                    const SizedBox(width: 15),
+                    _buildMenuButton(Icons.person, "Profil", () {
+                      Navigator.pushNamed(context, '/profile');
+                    }),
+                  ],
+                ),
               ],
             ),
+            
+      
+            
             
             // LIST RIWAYAT
             const SizedBox(height: 30),
@@ -176,13 +195,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMenuButton(IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
+    return Expanded(
+    child: GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 5, offset: const Offset(0, 2))]),
-        child: Column(children: [Icon(icon, size: 30, color: Colors.green), const SizedBox(height: 10), Text(label, style: const TextStyle(fontWeight: FontWeight.bold))]),
+        padding: const EdgeInsets.symmetric(vertical: 20), // Sesuaikan tinggi tombol
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 5, offset: const Offset(0, 3))],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 32, color: Colors.green),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ],
+        ),
       ),
+    )
     );
   }
 }

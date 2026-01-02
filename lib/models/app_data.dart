@@ -16,5 +16,10 @@ class AppData {
   int konsumsiKalori = 0;
   int targetKalori = 2000;
 
+  // Macro tracking
+  double protein = 0;
+  double karbo = 0;
+  double lemak = 0;
+
   List<Map<String, dynamic>> riwayatMakan = [];
 }

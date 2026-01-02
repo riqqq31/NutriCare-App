@@ -88,65 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
     appData.targetKalori = (bmr * factor).toInt();
   }
 
-  // --- LOGIKA DAFTAR AKUN BARU ---
-  void _showRegisterDialog() {
-    final userRegController = TextEditingController();
-    final passRegController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Buat Akun Baru"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: userRegController,
-              decoration: const InputDecoration(labelText: "Username Baru"),
-            ),
-            TextField(
-              controller: passRegController,
-              decoration: const InputDecoration(labelText: "Password Baru"),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              String u = userRegController.text;
-              String p = passRegController.text;
-              if (u.isNotEmpty && p.isNotEmpty) {
-                int id = await DatabaseHelper.instance.registerUser(u, p);
-                if (id != -1) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Akun jadi! Silakan Login."),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Username sudah dipakai!"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text("Daftar"),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -228,7 +169,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Text("Belum punya akun? "),
                   TextButton(
-                    onPressed: _showRegisterDialog,
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/register');
+                    },
                     child: const Text("Daftar di sini"),
                   ),
                 ],

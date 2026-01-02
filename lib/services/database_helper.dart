@@ -10,7 +10,7 @@ class DatabaseHelper {
   Future<Database> get database async {
     if (_database != null) return _database!;
     // Naikkan versi ke 2 atau ganti nama file biar tabel baru ke-load
-    _database = await _initDB('nutricare_v4_macros.db'); 
+    _database = await _initDB('nutricare_NEW_macros.db'); 
     return _database!;
   }
 

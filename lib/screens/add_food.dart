@@ -145,7 +145,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     );
   }
 
-  void _updatePorsi(double delta) {
+    void _updatePorsi(double delta) {
     double newValue = _porsi + delta;
     if (newValue < 0.5) newValue = 0.5;
     setState(() {
@@ -162,12 +162,11 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
       ],
     );
   }
-
-  Future<void> _simpanMakanan(BuildContext context) async {
+Future<void> _simpanMakanan(BuildContext context) async {
     final appData = AppData();
     if (appData.activeUserId == null) return;
 
-    // Data yang disimpan adalah HASIL PERKALIAN PORSI
+    // 1. Siapkan data makanan sesuai porsi
     Map<String, dynamic> row = {
       'user_id': appData.activeUserId,
       'nama': _selectedFood!['nama'],
@@ -179,15 +178,26 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
       'waktu': DateTime.now().toString(),
     };
 
+    // 2. Simpan ke database
     await DatabaseHelper.instance.insertMakanan(row);
 
-    // Update RAM (Kalori aja dulu, makro nanti kalo dashboard udah support)
+    // 3. Update RAM
     appData.konsumsiKalori += (row['kalori'] as int);
-    appData.riwayatMakan.add(row);
+    appData.riwayatMakan.insert(0, row); // Biar riwayat terbaru muncul paling atas
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Berhasil disimpan!"), backgroundColor: Colors.green));
-      Navigator.pop(context);
+      // 4. Kasih tau user kalau berhasil
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Berhasil disimpan!"), backgroundColor: Colors.green)
+      );
+
+      // 5. JANGAN PAKE Navigator.pop! 
+      // Cukup reset form biar user bisa input makanan lain kalau mau.
+      setState(() {
+        _selectedFood = null;
+        _porsi = 1.0;
+        _porsiController.text = "1.0";
+      });
     }
   }
 }

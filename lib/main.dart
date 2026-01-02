@@ -23,7 +23,7 @@ class NutriCareApp extends StatelessWidget {
         appBarTheme: const AppBarTheme(
           elevation: 0,
           centerTitle: true,
-          backgroundColor: Colors.teal,
+          backgroundColor: Colors.green,
           foregroundColor: Colors.white,
         ),
         cardTheme: CardThemeData(

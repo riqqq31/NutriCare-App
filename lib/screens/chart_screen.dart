@@ -23,6 +23,12 @@ class _ChartScreenState extends State<ChartScreen> {
     _fetchChartData();
   }
 
+  @override
+  void didUpdateWidget(covariant ChartScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _fetchChartData();
+  }
+
   void _fetchChartData() async {
     final appData = AppData();
     if (appData.activeUserId == null) return;

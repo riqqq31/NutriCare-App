@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<Widget> _pages = [
       _buildDashboardContent(appData), // 0: Home
       const AddFoodScreen(), // 1: Catat Makan
-      const ChartScreen(), // 2: Statistik
+      ChartScreen(), // 2: Statistik
       const ArticleScreen(), // 3: Artikel
       const ProfileScreen(), // 4: Profil
     ];

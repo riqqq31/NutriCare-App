@@ -1,314 +1,391 @@
 import 'package:flutter/material.dart';
-import '../core/theme.dart';
+import '../services/database_helper.dart';
+import '../widgets/article/article_card.dart';
+import '../widgets/article/featured_article_card.dart';
 
-class ArticleScreen extends StatelessWidget {
+class ArticleScreen extends StatefulWidget {
   const ArticleScreen({super.key});
 
-  final List<Map<String, String>> articles = const [
-    {
-      "title": "Pentingnya Protein untuk Otot",
-      "category": "Nutrisi",
-      "readTime": "3 min baca",
-      "content":
-          "Protein adalah makronutrien esensial yang berperan penting dalam pembentukan dan perbaikan jaringan tubuh, terutama otot. Asupan protein yang cukup membantu mempercepat pemulihan setelah olahraga dan menjaga massa otot agar metabolisme tetap tinggi.",
-    },
-    {
-      "title": "Cara Menghitung Kalori Harian",
-      "category": "Tips",
-      "readTime": "5 min baca",
-      "content":
-          "Mengetahui kebutuhan kalori harian (TDEE) adalah langkah awal diet sukses. TDEE dihitung berdasarkan BMR (Basal Metabolic Rate) dikalikan dengan faktor aktivitas. Jika ingin turun berat badan, ciptakan defisit kalori sekitar 300-500 kkal dari TDEE Anda.",
-    },
-    {
-      "title": "Diet Sehat Tanpa Rasa Lapar",
-      "category": "Diet",
-      "readTime": "4 min baca",
-      "content":
-          "Kunci diet tanpa lapar adalah memperbanyak konsumsi serat dari sayuran dan buah, serta protein. Makanan berserat tinggi membuat perut kenyang lebih lama karena dicerna perlahan. Jangan lupa minum air putih yang cukup!",
-    },
-    {
-      "title": "Bahaya Gula Berlebih",
-      "category": "Kesehatan",
-      "readTime": "3 min baca",
-      "content":
-          "Konsumsi gula berlebih dapat meningkatkan risiko diabetes tipe 2, obesitas, dan penyakit jantung. Batasi asupan gula tambahan maksimal 50 gram (sekitar 4 sendok makan) per hari untuk orang dewasa sehat.",
-    },
-    {
-      "title": "Manfaat Minum Air Putih",
-      "category": "Hidrasi",
-      "readTime": "2 min baca",
-      "content":
-          "Sekitar 60% tubuh manusia terdiri dari air. Dehidrasi ringan saja bisa menurunkan konsentrasi dan energi. Minumlah minimal 8 gelas sehari, atau lebih jika Anda aktif berolahraga, untuk menjaga fungsi organ tubuh tetap optimal.",
-    },
+  @override
+  State<ArticleScreen> createState() => _ArticleScreenState();
+}
+
+class _ArticleScreenState extends State<ArticleScreen> {
+  int _selectedCategoryIndex = 0;
+
+  Map<String, dynamic>? _featuredArticle;
+  List<Map<String, dynamic>> _articles = [];
+  bool _isLoading = true;
+
+  final List<String> _categories = [
+    'Semua',
+    'NUTRISI',
+    'SNACK',
+    'RESEP',
+    'TIPS',
   ];
+
+  final Map<String, int> _categoryColors = {
+    'NUTRISI': 0xFFFB923C,
+    'SNACK': 0xFF818CF8,
+    'RESEP': 0xFF60A5FA,
+    'TIPS': 0xFF22C55E,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArticles();
+  }
+
+  Future<void> _loadArticles() async {
+    setState(() => _isLoading = true);
+
+    final featured = await DatabaseHelper.instance.getFeaturedArticle();
+    final category = _selectedCategoryIndex == 0
+        ? null
+        : _categories[_selectedCategoryIndex];
+    final articles = await DatabaseHelper.instance.getArticles(
+      category: category,
+    );
+
+    setState(() {
+      _featuredArticle = featured;
+      _articles = articles.where((a) => a['is_featured'] != 1).toList();
+      _isLoading = false;
+    });
+  }
+
+  void _onCategorySelected(int index) {
+    setState(() => _selectedCategoryIndex = index);
+    _loadArticles();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NutriColors.background,
-      appBar: AppBar(
-        backgroundColor: NutriColors.background,
-        elevation: 0,
-        title: const Text(
-          "Artikel Kesehatan",
-          style: TextStyle(
-            color: NutriColors.textPrimary,
-            fontWeight: FontWeight.bold,
+      backgroundColor: const Color(0xFF09090B),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF60A5FA)),
+            )
+          : CustomScrollView(
+              slivers: [
+                // Header
+                SliverToBoxAdapter(child: _buildHeader()),
+
+                // Category Filters
+                SliverToBoxAdapter(child: _buildCategoryFilters()),
+
+                // Featured Article - Using extracted widget
+                SliverToBoxAdapter(
+                  child: FeaturedArticleCard(
+                    article: _featuredArticle,
+                    onTap: () => _featuredArticle != null
+                        ? _showArticleDetail(_featuredArticle!)
+                        : null,
+                  ),
+                ),
+
+                // Latest Articles Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Artikel Terbaru',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFF8FAFC),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {},
+                          child: const Text(
+                            'Lihat Semua',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF60A5FA),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Article List - Using extracted widget
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => ArticleCard(
+                        article: _articles[index],
+                        categoryColors: _categoryColors,
+                        onTap: () => _showArticleDetail(_articles[index]),
+                      ),
+                      childCount: _articles.length,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF09090B),
+        border: Border(bottom: BorderSide(color: Color(0x0DFFFFFF), width: 1)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Profile Avatar
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF27272A), width: 2),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF60A5FA), Color(0xFF818CF8)],
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(Icons.person, color: Colors.white, size: 20),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Title
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Temukan Inspirasi,',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                    Text(
+                      'Artikel Kesehatan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFF8FAFC),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Search Button
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF18181B),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+                ),
+                child: const Icon(
+                  Icons.search,
+                  color: Color(0xFFF8FAFC),
+                  size: 22,
+                ),
+              ),
+            ],
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(NutriSpacing.lg),
-        itemCount: articles.length,
-        itemBuilder: (context, index) {
-          final article = articles[index];
-          return _buildArticleCard(context, article, index);
-        },
-      ),
     );
   }
 
-  Widget _buildArticleCard(
-    BuildContext context,
-    Map<String, String> article,
-    int index,
-  ) {
-    return GestureDetector(
-      onTap: () => _showArticleDetail(context, article),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: NutriSpacing.md),
-        decoration: BoxDecoration(
-          color: NutriColors.surface,
-          borderRadius: BorderRadius.circular(NutriRadius.lg),
-          boxShadow: NutriShadows.small,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Placeholder Image Gradient
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(NutriRadius.lg),
+  Widget _buildCategoryFilters() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Row(
+        children: List.generate(_categories.length, (index) {
+          final isSelected = _selectedCategoryIndex == index;
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index < _categories.length - 1 ? 8 : 0,
+            ),
+            child: GestureDetector(
+              onTap: () => _onCategorySelected(index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
                 ),
-                gradient: LinearGradient(
-                  colors: [
-                    NutriColors.primary.withOpacity(0.8),
-                    NutriColors.primaryDark.withOpacity(0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -20,
-                    bottom: -20,
-                    child: Icon(
-                      Icons.article_outlined,
-                      size: 100,
-                      color: Colors.white.withOpacity(0.2),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(NutriSpacing.md),
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(NutriRadius.sm),
-                        ),
-                        child: Text(
-                          article["category"]!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF60A5FA)
+                      : const Color(0xFF18181B),
+                  borderRadius: BorderRadius.circular(50),
+                  border: isSelected
+                      ? null
+                      : Border.all(color: const Color(0x0DFFFFFF), width: 1),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF60A5FA).withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 0),
                           ),
-                        ),
-                      ),
-                    ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  _categories[index],
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected
+                        ? const Color(0xFF09090B)
+                        : const Color(0xFF94A3B8),
                   ),
-                ],
+                ),
               ),
             ),
-
-            Padding(
-              padding: const EdgeInsets.all(NutriSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    article["title"]!,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: NutriColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: NutriSpacing.sm),
-                  Text(
-                    article["content"]!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: NutriColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: NutriSpacing.md),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: NutriColors.textMuted,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        article["readTime"]!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: NutriColors.textMuted,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Text(
-                        "Baca Selengkapnya",
-                        style: TextStyle(
-                          color: NutriColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.arrow_forward,
-                        size: 14,
-                        color: NutriColors.primary,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        }),
       ),
     );
   }
 
-  void _showArticleDetail(BuildContext context, Map<String, String> article) {
+  void _showArticleDetail(Map<String, dynamic> article) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.8,
+        initialChildSize: 0.9,
         minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (_, controller) => Container(
           decoration: const BoxDecoration(
-            color: NutriColors.surface,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(NutriRadius.xl),
-            ),
+            color: Color(0xFF18181B),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
               // Drag Handle
               Center(
                 child: Container(
-                  margin: const EdgeInsets.only(top: NutriSpacing.md),
+                  margin: const EdgeInsets.only(top: 12),
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: NutriColors.border,
+                    color: const Color(0xFF27272A),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
+
+              // Content
               Expanded(
                 child: ListView(
                   controller: controller,
-                  padding: const EdgeInsets.all(NutriSpacing.lg),
+                  padding: const EdgeInsets.all(20),
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: NutriColors.primaryBg,
-                        borderRadius: BorderRadius.circular(NutriRadius.md),
-                      ),
-                      child: Text(
-                        article["category"]!,
-                        style: const TextStyle(
-                          color: NutriColors.primary,
-                          fontWeight: FontWeight.bold,
+                    // Category Badge
+                    if (article['category'] != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        textAlign: TextAlign.center,
+                        decoration: BoxDecoration(
+                          color: Color(
+                            _categoryColors[article['category']] ?? 0xFF60A5FA,
+                          ).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          article['category'] ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(
+                              _categoryColors[article['category']] ??
+                                  0xFF60A5FA,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: NutriSpacing.md),
+                    const SizedBox(height: 16),
+
+                    // Title
                     Text(
-                      article["title"]!,
+                      article['title'],
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: NutriColors.textPrimary,
+                        color: Color(0xFFF8FAFC),
                         height: 1.3,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: NutriSpacing.md),
+                    const SizedBox(height: 12),
+
+                    // Read Time
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(
                           Icons.access_time,
                           size: 16,
-                          color: NutriColors.textSecondary,
+                          color: Color(0xFF94A3B8),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          article["readTime"]!,
+                          article['read_time'] ?? '',
                           style: const TextStyle(
-                            color: NutriColors.textSecondary,
+                            fontSize: 12,
+                            color: Color(0xFF94A3B8),
                           ),
                         ),
                         const SizedBox(width: 16),
                         const Icon(
                           Icons.calendar_today,
                           size: 16,
-                          color: NutriColors.textSecondary,
+                          color: Color(0xFF94A3B8),
                         ),
                         const SizedBox(width: 4),
                         const Text(
-                          "02 Jan 2026",
-                          style: TextStyle(color: NutriColors.textSecondary),
+                          '04 Jan 2026',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF94A3B8),
+                          ),
                         ),
                       ],
                     ),
-                    const Divider(height: NutriSpacing.xxl),
+
+                    const Divider(height: 32, color: Color(0xFF27272A)),
+
+                    // Content
                     Text(
-                      article["content"]! *
-                          5, // Duplicate content for demo purpose length
+                      '${article['description']}\n\n${article['content'] ?? 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}',
                       style: const TextStyle(
                         fontSize: 16,
-                        color: NutriColors.textPrimary,
-                        height: 1.6,
+                        color: Color(0xFFF8FAFC),
+                        height: 1.7,
                       ),
                     ),
-                    const SizedBox(height: NutriSpacing.xxl),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),

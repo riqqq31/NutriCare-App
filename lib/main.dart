@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'core/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/add_food.dart';
 import 'screens/home_screen.dart';
 import 'screens/input_profil_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/chart_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/forgot_password_screen.dart';
 
 void main() {
-  runApp(const NutriCareApp());
+  runApp(const ProviderScope(child: NutriCareApp()));
 }
 
 class NutriCareApp extends StatelessWidget {
@@ -19,7 +20,14 @@ class NutriCareApp extends StatelessWidget {
     return MaterialApp(
       title: 'NutriCare',
       debugShowCheckedModeBanner: false,
-      theme: NutriTheme.lightTheme,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF60A5FA),
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF09090B),
+      ),
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
@@ -28,8 +36,8 @@ class NutriCareApp extends StatelessWidget {
         '/add_food': (context) => const AddFoodScreen(),
         '/chart': (context) => const ChartScreen(),
         '/register': (context) => const RegisterScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
       },
     );
   }
 }
-  

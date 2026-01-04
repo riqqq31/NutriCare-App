@@ -1,367 +1,111 @@
 import 'package:flutter/material.dart';
-import '../models/app_data.dart';
-import '../services/database_helper.dart';
-import '../core/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/user_provider.dart';
+import '../providers/food_log_provider.dart';
+import '../widgets/profile/stat_card.dart';
+import '../widgets/profile/profile_menu_item.dart';
+import '../widgets/profile/target_diet_card.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _namaController = TextEditingController();
-  final _usiaController = TextEditingController();
-  final _bbController = TextEditingController();
-  final _tbController = TextEditingController();
-
-  String _selectedGender = "Laki-laki";
-  String _selectedActivity = "Jarang Olahraga (Sedenter)";
-  bool _isEditing = false;
-  bool _isLoading = false;
-
-  final Map<String, double> _activityLevels = {
-    "Jarang Olahraga (Sedenter)": 1.2,
-    "Olahraga Ringan (1-3 hari/minggu)": 1.375,
-    "Olahraga Sedang (3-5 hari/minggu)": 1.55,
-    "Olahraga Berat (6-7 hari/minggu)": 1.725,
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfileData();
-  }
-
-  void _loadProfileData() {
-    final appData = AppData();
-    _namaController.text = appData.nama;
-    _usiaController.text = appData.usia.toString();
-    _bbController.text = appData.beratBadan.toString();
-    _tbController.text = appData.tinggiBadan.toString();
-    _selectedGender = appData.gender;
-    _selectedActivity = appData.aktivitas;
-    if (!_activityLevels.containsKey(_selectedActivity)) {
-      _selectedActivity = _activityLevels.keys.first;
-    }
-    setState(() {});
-  }
-
-  void _saveProfile() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-
-      final appData = AppData();
-
-      // Update local state
-      appData.nama = _namaController.text;
-      appData.gender = _selectedGender;
-      appData.usia = int.tryParse(_usiaController.text) ?? 25;
-      appData.beratBadan = double.tryParse(_bbController.text) ?? 0;
-      appData.tinggiBadan = double.tryParse(_tbController.text) ?? 0;
-      appData.aktivitas = _selectedActivity;
-
-      // Calculate BMR & TDEE
-      double bmr =
-          (10 * appData.beratBadan) +
-          (6.25 * appData.tinggiBadan) -
-          (5 * appData.usia);
-      if (appData.gender == "Laki-laki") {
-        bmr += 5;
-      } else {
-        bmr -= 161;
-      }
-      double activityFactor = _activityLevels[_selectedActivity] ?? 1.2;
-      appData.targetKalori = (bmr * activityFactor).toInt();
-
-      // Update Database
-      if (appData.activeUserId != null) {
-        await DatabaseHelper.instance.updateProfile(appData.activeUserId!, {
-          'nama': appData.nama,
-          'gender': appData.gender,
-          'usia': appData.usia,
-          'berat': appData.beratBadan,
-          'tinggi': appData.tinggiBadan,
-          'aktivitas': appData.aktivitas,
-        });
-      }
-
-      setState(() {
-        _isLoading = false;
-        _isEditing = false;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("Profil berhasil diperbarui!"),
-            backgroundColor: NutriColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(NutriRadius.md),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(userProvider);
+    final foodLogState = ref.watch(foodLogProvider);
+
+    // Calculate progress
+    final calorieProgress = userState.targetKalori > 0
+        ? (foodLogState.konsumsiKalori / userState.targetKalori).clamp(0.0, 1.0)
+        : 0.0;
+
     return Scaffold(
-      backgroundColor: NutriColors.background,
-      appBar: AppBar(
-        backgroundColor: NutriColors.background,
-        elevation: 0,
-        title: const Text(
-          "Profil Saya",
-          style: TextStyle(
-            color: NutriColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isEditing ? Icons.close : Icons.edit,
-              color: NutriColors.primary,
+      backgroundColor: const Color(0xFF09090B),
+      body: CustomScrollView(
+        slivers: [
+          // Header
+          SliverToBoxAdapter(child: _buildHeader()),
+
+          // Profile Avatar & Name
+          SliverToBoxAdapter(child: _buildProfileHeader(userState)),
+
+          // Stats Cards - Using extracted widget
+          SliverToBoxAdapter(child: _buildStatsCards(userState)),
+
+          // Target Diet Card - Using extracted widget
+          SliverToBoxAdapter(
+            child: TargetDietCard(
+              targetKalori: userState.targetKalori,
+              targetProtein: userState.targetProtein.toInt(),
+              targetKarbo: userState.targetKarbo.toInt(),
+              targetLemak: userState.targetLemak.toInt(),
+              aktivitas: userState.aktivitas,
+              calorieProgress: calorieProgress,
+              onEditTap: () => Navigator.pushNamed(context, '/input_profil'),
             ),
-            onPressed: () {
-              if (_isEditing) _loadProfileData(); // Reset if cancel
-              setState(() => _isEditing = !_isEditing);
-            },
           ),
+
+          // Menu Section - Using extracted widget
+          SliverToBoxAdapter(child: _buildMenuSection()),
+
+          // Logout Button
+          SliverToBoxAdapter(child: _buildLogoutButton()),
+
+          // Bottom Padding
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(NutriSpacing.lg),
-        child: Form(
-          key: _formKey,
-          child: Column(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF09090B).withOpacity(0.9),
+        border: const Border(
+          bottom: BorderSide(color: Color(0x0DFFFFFF), width: 1),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Profile Header Card
-              Container(
-                padding: const EdgeInsets.all(NutriSpacing.lg),
-                decoration: BoxDecoration(
-                  gradient: NutriColors.cardGradient,
-                  borderRadius: BorderRadius.circular(NutriRadius.xl),
-                  boxShadow: NutriShadows.glow,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(NutriSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: NutriSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _namaController.text.isNotEmpty
-                                ? _namaController.text
-                                : "User",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Target: ${AppData().targetKalori} kkal",
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              const Text(
+                'Profil',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFF8FAFC),
                 ),
               ),
-              const SizedBox(height: NutriSpacing.xl),
-
-              // Form Fields
-              _buildEditableTextField(
-                label: "Nama Panggilan",
-                controller: _namaController,
-                icon: Icons.badge_outlined,
-                enabled: _isEditing,
-              ),
-              const SizedBox(height: NutriSpacing.md),
-
-              _isEditing
-                  ? _buildDropdown(
-                      label: "Jenis Kelamin",
-                      value: _selectedGender,
-                      items: ["Laki-laki", "Perempuan"],
-                      onChanged: (v) => setState(() => _selectedGender = v!),
-                      icon: Icons.wc_outlined,
-                    )
-                  : _buildReadOnlyField(
-                      "Jenis Kelamin",
-                      _selectedGender,
-                      Icons.wc_outlined,
-                    ),
-
-              const SizedBox(height: NutriSpacing.md),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildEditableTextField(
-                      label: "Usia (th)",
-                      controller: _usiaController,
-                      icon: Icons.cake_outlined,
-                      enabled: _isEditing,
-                      isNumber: true,
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF18181B),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0x0DFFFFFF),
+                      width: 1,
                     ),
                   ),
-                  const SizedBox(width: NutriSpacing.md),
-                  Expanded(
-                    child: _buildEditableTextField(
-                      label: "Berat (kg)",
-                      controller: _bbController,
-                      icon: Icons.fitness_center_outlined,
-                      enabled: _isEditing,
-                      isNumber: true,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: NutriSpacing.md),
-              _buildEditableTextField(
-                label: "Tinggi Badan (cm)",
-                controller: _tbController,
-                icon: Icons.height_outlined,
-                enabled: _isEditing,
-                isNumber: true,
-              ),
-
-              const SizedBox(height: NutriSpacing.md),
-
-              _isEditing
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Aktivitas",
-                          style: TextStyle(
-                            color: NutriColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ..._activityLevels.keys.map((activity) {
-                          bool isSelected = _selectedActivity == activity;
-                          return GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedActivity = activity),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? NutriColors.primaryBg
-                                    : NutriColors.surfaceAlt,
-                                borderRadius: BorderRadius.circular(
-                                  NutriRadius.md,
-                                ),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? NutriColors.primary
-                                      : Colors.transparent,
-                                ),
-                              ),
-                              child: Text(
-                                activity,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? NutriColors.primary
-                                      : NutriColors.textPrimary,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
-                    )
-                  : _buildReadOnlyField(
-                      "Aktivitas",
-                      _selectedActivity,
-                      Icons.directions_run_outlined,
-                    ),
-
-              const SizedBox(height: NutriSpacing.xxl),
-
-              // Save Button
-              if (_isEditing)
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _saveProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: NutriColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(NutriRadius.md),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "SIMPAN PERUBAHAN",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                  child: const Icon(
+                    Icons.settings,
+                    color: Color(0xFF94A3B8),
+                    size: 22,
                   ),
                 ),
-
-              // Logout Button (Only show when not editing)
-              if (!_isEditing)
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      AppData().activeUserId = null;
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: NutriColors.error,
-                      side: const BorderSide(color: NutriColors.error),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(NutriRadius.md),
-                      ),
-                    ),
-                    child: const Text(
-                      "KELUAR AKUN",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
+              ),
             ],
           ),
         ),
@@ -369,75 +113,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildEditableTextField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    bool enabled = true,
-    bool isNumber = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      enabled: enabled,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(
-          icon,
-          color: enabled ? NutriColors.primary : NutriColors.textMuted,
-        ),
-        filled: true,
-        fillColor: enabled ? NutriColors.surface : NutriColors.surfaceAlt,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NutriRadius.md),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NutriRadius.md),
-          borderSide: const BorderSide(color: NutriColors.primary, width: 2),
-        ),
-        enabledBorder: enabled
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(NutriRadius.md),
-                borderSide: const BorderSide(color: NutriColors.border),
-              )
-            : null,
-      ),
-    );
-  }
-
-  Widget _buildReadOnlyField(String label, String value, IconData icon) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      decoration: BoxDecoration(
-        color: NutriColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(NutriRadius.md),
-      ),
-      child: Row(
+  Widget _buildProfileHeader(UserState userState) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+      child: Column(
         children: [
-          Icon(icon, color: NutriColors.textMuted),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: NutriColors.textSecondary,
+          // Avatar with Edit Button
+          Stack(
+            children: [
+              Container(
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF27272A), width: 4),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF60A5FA), Color(0xFF818CF8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF60A5FA).withOpacity(0.3),
+                      blurRadius: 15,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(Icons.person, color: Colors.white, size: 50),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 4,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF60A5FA),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF09090B),
+                      width: 3,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.edit,
+                    color: Color(0xFF09090B),
+                    size: 14,
                   ),
                 ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: NutriColors.textPrimary,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Name
+          Text(
+            userState.nama.isNotEmpty ? userState.nama : 'User',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFF8FAFC),
+            ),
+          ),
+          const SizedBox(height: 4),
+
+          // Join Date
+          const Text(
+            'Bergabung sejak Januari 2024',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF94A3B8),
             ),
           ),
         ],
@@ -445,28 +193,131 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required Function(String?) onChanged,
-    required IconData icon,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      items: items
-          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-          .toList(),
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: NutriColors.primary),
-        filled: true,
-        fillColor: NutriColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NutriRadius.md),
-          borderSide: const BorderSide(color: NutriColors.border),
-        ),
+  Widget _buildStatsCards(UserState userState) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: StatCard(
+              label: 'Berat',
+              value: userState.beratBadan.round().toString(),
+              unit: 'kg',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: StatCard(
+              label: 'Tinggi',
+              value: userState.tinggiBadan.round().toString(),
+              unit: 'cm',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: StatCard(
+              label: 'Umur',
+              value: userState.usia.toString(),
+              unit: 'th',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
+              'AKUN',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          ProfileMenuItem(
+            icon: Icons.person,
+            title: 'Data Pribadi',
+            subtitle: 'Nama, Email, Password',
+            onTap: () => Navigator.pushNamed(context, '/input_profil'),
+          ),
+          const SizedBox(height: 12),
+          ProfileMenuItem(
+            icon: Icons.notifications,
+            title: 'Notifikasi',
+            subtitle: 'Pengingat Makan, Update',
+            onTap: () {},
+          ),
+          const SizedBox(height: 12),
+          ProfileMenuItem(
+            icon: Icons.health_and_safety,
+            title: 'Kesehatan',
+            subtitle: 'Sinkronisasi Apple Health',
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              ref.read(userProvider.notifier).logout();
+              ref.read(foodLogProvider.notifier).reset();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.logout, color: Color(0xFFEF4444), size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Keluar',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFEF4444),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Versi 1.0.4 (Build 2024)',
+            style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+          ),
+        ],
       ),
     );
   }

@@ -1,482 +1,290 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../models/app_data.dart';
-import '../services/database_helper.dart';
-import '../core/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/user_provider.dart';
+import '../providers/food_log_provider.dart';
+import '../widgets/charts/macro_distribution_card.dart';
+import '../widgets/charts/nutrient_card.dart';
+import '../widgets/charts/weekly_trend_card.dart';
 
-class ChartScreen extends StatefulWidget {
+class ChartScreen extends ConsumerStatefulWidget {
   const ChartScreen({super.key});
 
   @override
-  State<ChartScreen> createState() => _ChartScreenState();
+  ConsumerState<ChartScreen> createState() => _ChartScreenState();
 }
 
-class _ChartScreenState extends State<ChartScreen> {
-  List<double> _weeklyData = [0, 0, 0, 0, 0, 0, 0];
-  List<String> _weeklyDates = [];
-  bool _isLoading = true;
-  int _touchedIndex = -1;
+class _ChartScreenState extends ConsumerState<ChartScreen> {
+  int _selectedTabIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchChartData();
-  }
-
-  @override
-  void didUpdateWidget(covariant ChartScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _fetchChartData();
-  }
-
-  void _fetchChartData() async {
-    final appData = AppData();
-    if (appData.activeUserId == null) return;
-
-    final stats = await DatabaseHelper.instance.getWeeklyStats(
-      appData.activeUserId!,
-    );
-
-    List<double> data = [0, 0, 0, 0, 0, 0, 0];
-    List<String> dates = [];
-
-    DateTime now = DateTime.now();
-    for (int i = 6; i >= 0; i--) {
-      DateTime dateToCheck = now.subtract(Duration(days: i));
-      dates.add(_formatShortDate(dateToCheck));
-    }
-
-    for (int i = 0; i < 7; i++) {
-      DateTime dateToCheck = now.subtract(Duration(days: i));
-      String formattedDate = dateToCheck.toString().substring(0, 10);
-
-      for (var row in stats) {
-        if (row['tanggal'] == formattedDate) {
-          data[6 - i] = (row['total'] as num).toDouble();
-        }
-      }
-    }
-
-    setState(() {
-      _weeklyData = data;
-      _weeklyDates = dates;
-      _isLoading = false;
-    });
-  }
+  final List<String> _tabs = ['Harian', 'Mingguan', 'Bulanan'];
 
   String _formatShortDate(DateTime date) {
     const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     return days[date.weekday % 7];
   }
 
+  List<String> _getWeeklyDates() {
+    List<String> dates = [];
+    DateTime now = DateTime.now();
+    for (int i = 6; i >= 0; i--) {
+      DateTime dateToCheck = now.subtract(Duration(days: i));
+      dates.add(_formatShortDate(dateToCheck));
+    }
+    return dates;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final appData = AppData();
+    final foodLogState = ref.watch(foodLogProvider);
+    final userState = ref.watch(userProvider);
+    final weeklyStatsAsync = ref.watch(weeklyStatsProvider);
+    final weeklyDates = _getWeeklyDates();
+
+    // Calculate macro percentages
+    final totalMacros =
+        foodLogState.protein + foodLogState.karbo + foodLogState.lemak;
+    final proteinPercent = totalMacros > 0
+        ? (foodLogState.protein / totalMacros * 100).round()
+        : 0;
+    final karboPercent = totalMacros > 0
+        ? (foodLogState.karbo / totalMacros * 100).round()
+        : 0;
+    final lemakPercent = totalMacros > 0
+        ? (foodLogState.lemak / totalMacros * 100).round()
+        : 0;
+
+    // Calculate target macros from targetKalori
+    final targetProtein = (userState.targetKalori * 0.20 / 4)
+        .round()
+        .toDouble();
+    final targetKarbo = (userState.targetKalori * 0.50 / 4).round().toDouble();
+    final targetLemak = (userState.targetKalori * 0.30 / 9).round().toDouble();
 
     return Scaffold(
-      backgroundColor: NutriColors.background,
-      appBar: AppBar(
-        backgroundColor: NutriColors.background,
-        title: const Text(
-          "Statistik Kalori",
-          style: TextStyle(
-            color: NutriColors.textPrimary,
-            fontWeight: FontWeight.bold,
+      backgroundColor: const Color(0xFF09090B),
+      body: CustomScrollView(
+        slivers: [
+          // Header
+          SliverToBoxAdapter(child: _buildHeader()),
+
+          // Tab Selector
+          SliverToBoxAdapter(child: _buildTabSelector()),
+
+          // Macro Distribution Card - Using extracted widget
+          SliverToBoxAdapter(
+            child: MacroDistributionCard(
+              totalCalories: foodLogState.konsumsiKalori,
+              proteinPercent: proteinPercent,
+              karboPercent: karboPercent,
+              lemakPercent: lemakPercent,
+              proteinGrams: foodLogState.protein,
+              karboGrams: foodLogState.karbo,
+              lemakGrams: foodLogState.lemak,
+            ),
           ),
-        ),
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: NutriColors.primary),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(NutriSpacing.lg),
+
+          // Detail Nutrisi Title
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Text(
+                'Detail Nutrisi',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFF8FAFC),
+                ),
+              ),
+            ),
+          ),
+
+          // Nutrient Detail Cards - Using extracted widget
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(NutriSpacing.lg),
-                    decoration: BoxDecoration(
-                      gradient: NutriColors.cardGradient,
-                      borderRadius: BorderRadius.circular(NutriRadius.xl),
-                      boxShadow: NutriShadows.glow,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Grafik 7 Hari Terakhir",
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: NutriSpacing.xs),
-                              const Text(
-                                "Pantau konsumsi kalorimu",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(NutriSpacing.md),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.bar_chart_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                      ],
-                    ),
+                  NutrientCard(
+                    icon: Icons.egg_alt,
+                    name: 'Protein',
+                    current: foodLogState.protein,
+                    target: targetProtein,
+                    color: const Color(0xFF818CF8),
                   ),
-                  const SizedBox(height: NutriSpacing.xl),
-
-                  // Chart Container
-                  Container(
-                    padding: const EdgeInsets.all(NutriSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: NutriColors.surface,
-                      borderRadius: BorderRadius.circular(NutriRadius.xl),
-                      boxShadow: NutriShadows.medium,
-                    ),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          height: 220,
-                          child: BarChart(
-                            BarChartData(
-                              alignment: BarChartAlignment.spaceAround,
-                              maxY: (appData.targetKalori * 1.3).toDouble(),
-                              barTouchData: BarTouchData(
-                                touchTooltipData: BarTouchTooltipData(
-                                  getTooltipColor: (_) =>
-                                      NutriColors.textPrimary,
-                                  getTooltipItem:
-                                      (group, groupIndex, rod, rodIndex) {
-                                        return BarTooltipItem(
-                                          '${rod.toY.toInt()} kkal',
-                                          const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        );
-                                      },
-                                ),
-                                touchCallback:
-                                    (FlTouchEvent event, barTouchResponse) {
-                                      setState(() {
-                                        if (!event
-                                                .isInterestedForInteractions ||
-                                            barTouchResponse == null ||
-                                            barTouchResponse.spot == null) {
-                                          _touchedIndex = -1;
-                                          return;
-                                        }
-                                        _touchedIndex = barTouchResponse
-                                            .spot!
-                                            .touchedBarGroupIndex;
-                                      });
-                                    },
-                              ),
-                              titlesData: FlTitlesData(
-                                show: true,
-                                topTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                rightTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    reservedSize: 40,
-                                    getTitlesWidget: (value, meta) {
-                                      if (value == 0) return const SizedBox();
-                                      return Text(
-                                        '${(value / 1000).toStringAsFixed(1)}k',
-                                        style: const TextStyle(
-                                          color: NutriColors.textMuted,
-                                          fontSize: 11,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    getTitlesWidget: (value, meta) {
-                                      int index = value.toInt();
-                                      if (index >= 0 &&
-                                          index < _weeklyDates.length) {
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 8,
-                                          ),
-                                          child: Text(
-                                            _weeklyDates[index],
-                                            style: TextStyle(
-                                              color: index == 6
-                                                  ? NutriColors.primary
-                                                  : NutriColors.textMuted,
-                                              fontSize: 12,
-                                              fontWeight: index == 6
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return const Text('');
-                                    },
-                                  ),
-                                ),
-                              ),
-                              gridData: FlGridData(
-                                show: true,
-                                drawVerticalLine: false,
-                                horizontalInterval: appData.targetKalori / 2,
-                                getDrawingHorizontalLine: (value) {
-                                  return FlLine(
-                                    color: NutriColors.border,
-                                    strokeWidth: 1,
-                                    dashArray: [5, 5],
-                                  );
-                                },
-                              ),
-                              borderData: FlBorderData(show: false),
-                              barGroups: _weeklyData.asMap().entries.map((
-                                entry,
-                              ) {
-                                int index = entry.key;
-                                double value = entry.value;
-                                bool isOver = value > appData.targetKalori;
-                                bool isTouched = index == _touchedIndex;
-                                bool isToday = index == 6;
-
-                                return BarChartGroupData(
-                                  x: index,
-                                  barRods: [
-                                    BarChartRodData(
-                                      toY: value,
-                                      width: isTouched ? 22 : 18,
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(6),
-                                        topRight: Radius.circular(6),
-                                      ),
-                                      gradient: LinearGradient(
-                                        colors: isOver
-                                            ? [
-                                                NutriColors.error,
-                                                NutriColors.error.withOpacity(
-                                                  0.7,
-                                                ),
-                                              ]
-                                            : isToday
-                                            ? [
-                                                NutriColors.primary,
-                                                NutriColors.primaryLight,
-                                              ]
-                                            : [
-                                                NutriColors.primarySoft,
-                                                NutriColors.primaryBg,
-                                              ],
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                              extraLinesData: ExtraLinesData(
-                                horizontalLines: [
-                                  HorizontalLine(
-                                    y: appData.targetKalori.toDouble(),
-                                    color: NutriColors.warning,
-                                    strokeWidth: 2,
-                                    dashArray: [10, 5],
-                                    label: HorizontalLineLabel(
-                                      show: true,
-                                      alignment: Alignment.topRight,
-                                      style: const TextStyle(
-                                        color: NutriColors.warning,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      labelResolver: (_) => 'Target',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: NutriSpacing.md),
-                        // Legend
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildLegendItem(
-                              NutriColors.primary,
-                              "Dalam Target",
-                            ),
-                            const SizedBox(width: NutriSpacing.lg),
-                            _buildLegendItem(
-                              NutriColors.error,
-                              "Melebihi Target",
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 12),
+                  NutrientCard(
+                    icon: Icons.bakery_dining,
+                    name: 'Karbohidrat',
+                    current: foodLogState.karbo,
+                    target: targetKarbo,
+                    color: const Color(0xFF60A5FA),
                   ),
-                  const SizedBox(height: NutriSpacing.lg),
-
-                  // Summary Card
-                  _buildSummaryCard(appData),
+                  const SizedBox(height: 12),
+                  NutrientCard(
+                    icon: Icons.water_drop,
+                    name: 'Lemak',
+                    current: foodLogState.lemak,
+                    target: targetLemak,
+                    color: const Color(0xFFFB923C),
+                  ),
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
           ),
-        ),
-        const SizedBox(width: NutriSpacing.xs),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: NutriColors.textMuted),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildSummaryCard(AppData appData) {
-    double avg = _weeklyData.reduce((a, b) => a + b) / 7;
-    double total = _weeklyData.reduce((a, b) => a + b);
-    int daysOverTarget = _weeklyData
-        .where((v) => v > appData.targetKalori)
-        .length;
-    bool isGood = avg <= appData.targetKalori;
-
-    return Container(
-      padding: const EdgeInsets.all(NutriSpacing.lg),
-      decoration: BoxDecoration(
-        color: NutriColors.surface,
-        borderRadius: BorderRadius.circular(NutriRadius.xl),
-        boxShadow: NutriShadows.small,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  "Rata-rata",
-                  "${avg.toInt()} kkal",
-                  Icons.trending_flat,
+          // Weekly Trend Chart - Using extracted widget
+          SliverToBoxAdapter(
+            child: weeklyStatsAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF93C5FD)),
                 ),
               ),
-              Container(width: 1, height: 40, color: NutriColors.border),
-              Expanded(
-                child: _buildStatItem(
-                  "Total",
-                  "${total.toInt()} kkal",
-                  Icons.summarize_outlined,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: NutriSpacing.xl),
-          Container(
-            padding: const EdgeInsets.all(NutriSpacing.md),
-            decoration: BoxDecoration(
-              color: isGood ? NutriColors.successBg : NutriColors.errorBg,
-              borderRadius: BorderRadius.circular(NutriRadius.md),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isGood ? Icons.check_circle : Icons.warning_amber_rounded,
-                  color: isGood ? NutriColors.success : NutriColors.error,
-                ),
-                const SizedBox(width: NutriSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isGood ? "Performa Bagus! 🎉" : "Perlu Perhatian ⚠️",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isGood
-                              ? NutriColors.success
-                              : NutriColors.error,
-                        ),
-                      ),
-                      Text(
-                        isGood
-                            ? "Rata-rata konsumsimu dalam batas target."
-                            : "$daysOverTarget dari 7 hari melebihi target.",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color:
-                              (isGood ? NutriColors.success : NutriColors.error)
-                                  .withOpacity(0.8),
-                        ),
-                      ),
-                    ],
+              error: (error, stack) => Padding(
+                padding: const EdgeInsets.all(32),
+                child: Center(
+                  child: Text(
+                    'Error: $error',
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
-              ],
+              ),
+              data: (weeklyData) => WeeklyTrendCard(
+                weeklyData: weeklyData,
+                weeklyDates: weeklyDates,
+                targetKalori: userState.targetKalori,
+              ),
             ),
           ),
+
+          // Bottom Padding
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: NutriColors.textMuted, size: 20),
-        const SizedBox(height: NutriSpacing.xs),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: NutriColors.textPrimary,
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF09090B).withOpacity(0.9),
+        border: const Border(
+          bottom: BorderSide(color: Color(0x0DFFFFFF), width: 1),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Back Button
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF18181B),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0x0DFFFFFF),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Color(0xFFA1A1AA),
+                    size: 18,
+                  ),
+                ),
+              ),
+
+              // Title
+              const Text(
+                'Grafik Makro',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFF8FAFC),
+                ),
+              ),
+
+              // More Button
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF18181B),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+                ),
+                child: const Icon(
+                  Icons.more_horiz,
+                  color: Color(0xFFA1A1AA),
+                  size: 22,
+                ),
+              ),
+            ],
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: NutriColors.textMuted),
+      ),
+    );
+  }
+
+  Widget _buildTabSelector() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF18181B),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
         ),
-      ],
+        child: Row(
+          children: List.generate(_tabs.length, (index) {
+            final isSelected = _selectedTabIndex == index;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedTabIndex = index),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF27272A)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    _tabs[index],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? const Color(0xFFF8FAFC)
+                          : const Color(0xFFA1A1AA),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
     );
   }
 }

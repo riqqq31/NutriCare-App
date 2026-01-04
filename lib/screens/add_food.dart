@@ -1,29 +1,127 @@
 import 'package:flutter/material.dart';
-import '../models/app_data.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/user_provider.dart';
+import '../providers/food_log_provider.dart';
 import '../services/database_helper.dart';
-import '../core/theme.dart';
+import '../widgets/food/food_card.dart';
 
-class AddFoodScreen extends StatefulWidget {
+class AddFoodScreen extends ConsumerStatefulWidget {
   const AddFoodScreen({super.key});
 
   @override
-  State<AddFoodScreen> createState() => _AddFoodScreenState();
+  ConsumerState<AddFoodScreen> createState() => _AddFoodScreenState();
 }
 
-class _AddFoodScreenState extends State<AddFoodScreen> {
-  Map<String, dynamic>? _selectedFood;
-  double _porsi = 1.0;
-  final TextEditingController _porsiController = TextEditingController(
-    text: "1.0",
-  );
+class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+
+  // State variables
   List<Map<String, dynamic>> _searchResults = [];
+  final List<Map<String, dynamic>> _selectedFoods = [];
+  List<Map<String, dynamic>> _recentFoods = [];
+  List<Map<String, dynamic>> _favoriteFoods = [];
+  Set<String> _favoritesSet = {};
+
   bool _isSearching = false;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final userId = ref.read(userProvider).id;
+
+      if (userId != null) {
+        final recent = await DatabaseHelper.instance.getRecentFoods(userId);
+        final favorite = await DatabaseHelper.instance.getUserFavorites(userId);
+
+        if (mounted) {
+          setState(() {
+            _recentFoods = recent;
+            _favoriteFoods = List<Map<String, dynamic>>.from(favorite);
+            _favoritesSet = favorite.map((f) => f['nama'] as String).toSet();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading initial data: $e');
+    }
+  }
+
+  Future<void> _reloadFavorites() async {
+    final userId = ref.read(userProvider).id;
+    if (userId != null) {
+      final favorite = await DatabaseHelper.instance.getUserFavorites(userId);
+      if (mounted) {
+        setState(() {
+          _favoriteFoods = List<Map<String, dynamic>>.from(favorite);
+          _favoritesSet = favorite.map((f) => f['nama'] as String).toSet();
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite(Map<String, dynamic> food) async {
+    try {
+      final userId = ref.read(userProvider).id;
+      if (userId == null) return;
+
+      final foodName = food['nama'] as String;
+      final isFavorited = _favoritesSet.contains(foodName);
+
+      if (isFavorited) {
+        await DatabaseHelper.instance.removeFromFavorites(userId, foodName);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$foodName dihapus dari favorit'),
+              backgroundColor: const Color(0xFF64748B),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      } else {
+        final result = await DatabaseHelper.instance.addToFavorites(
+          userId: userId,
+          nama: foodName,
+          kalori: (food['kalori'] as int? ?? 0),
+          protein: (food['protein'] as num? ?? 0).toDouble(),
+          karbo: (food['karbo'] as num? ?? 0).toDouble(),
+          lemak: (food['lemak'] as num? ?? 0).toDouble(),
+          porsiDesc: food['porsi_desc'] as String?,
+        );
+
+        if (result != -1 && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$foodName ditambahkan ke favorit'),
+              backgroundColor: const Color(0xFF22C55E),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+
+      await _reloadFavorites();
+    } catch (e) {
+      debugPrint('Error toggling favorite: $e');
+    }
+  }
 
   @override
   void dispose() {
-    _porsiController.dispose();
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -43,563 +141,416 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     });
   }
 
+  int get _totalCalories {
+    return _selectedFoods.fold(
+      0,
+      (sum, food) => sum + (food['kalori'] as int? ?? 0),
+    );
+  }
+
+  void _addToSelected(Map<String, dynamic> food) {
+    setState(() {
+      _selectedFoods.add({...food, 'porsi': 1.0});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NutriColors.background,
-      appBar: AppBar(
-        backgroundColor: NutriColors.background,
-        title: const Text(
-          "Cari Makanan",
-          style: TextStyle(
-            color: NutriColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        elevation: 0,
-      ),
-      body: Column(
+      backgroundColor: const Color(0xFF09090B),
+      body: Stack(
         children: [
-          // Search Section
-          Container(
-            padding: const EdgeInsets.all(NutriSpacing.lg),
-            decoration: BoxDecoration(
-              color: NutriColors.surface,
-              boxShadow: NutriShadows.small,
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _searchFood,
-              decoration: InputDecoration(
-                hintText: "Ketik nama makanan (cth: Ayam, Nasi)",
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: NutriColors.primary,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(
-                          Icons.clear,
-                          color: NutriColors.textMuted,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          _searchFood("");
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: NutriColors.surfaceAlt,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(NutriRadius.md),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(NutriRadius.md),
-                  borderSide: const BorderSide(
-                    color: NutriColors.primary,
-                    width: 2,
-                  ),
-                ),
+          Column(
+            children: [
+              // Header
+              _buildHeader(),
+
+              // Content
+              Expanded(
+                child: _searchController.text.isNotEmpty
+                    ? _buildSearchResults()
+                    : _buildDefaultView(),
               ),
-            ),
+            ],
           ),
 
-          // Content Area
-          Expanded(
-            child: _selectedFood != null
-                ? _buildFoodDetailView()
-                : _buildSearchResultsView(),
-          ),
+          // Bottom Action Bar
+          if (_selectedFoods.isNotEmpty) _buildBottomActionBar(),
         ],
       ),
     );
   }
 
-  Widget _buildSearchResultsView() {
-    if (_searchController.text.isEmpty) {
-      return _buildEmptySearchState();
-    }
-
-    if (_isSearching) {
-      return const Center(
-        child: CircularProgressIndicator(color: NutriColors.primary),
-      );
-    }
-
-    if (_searchResults.isEmpty) {
-      return _buildNoResultsState();
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(NutriSpacing.lg),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final food = _searchResults[index];
-        return _buildFoodResultCard(food);
-      },
-    );
-  }
-
-  Widget _buildFoodResultCard(Map<String, dynamic> food) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedFood = food;
-          _porsi = 1.0;
-          _porsiController.text = "1.0";
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: NutriSpacing.sm),
-        padding: const EdgeInsets.all(NutriSpacing.md),
-        decoration: BoxDecoration(
-          color: NutriColors.surface,
-          borderRadius: BorderRadius.circular(NutriRadius.md),
-          boxShadow: NutriShadows.small,
-        ),
-        child: Row(
+  Widget _buildHeader() {
+    return Container(
+      color: const Color(0xFF09090B),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: NutriColors.cardGradient,
-                borderRadius: BorderRadius.circular(NutriRadius.sm),
-              ),
-              child: const Icon(
-                Icons.restaurant,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: NutriSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Navbar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Row(
                 children: [
-                  Text(
-                    food['nama'] ?? '',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: NutriColors.textPrimary,
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFF94A3B8),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    onPressed: () => Navigator.pop(context),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    food['porsi_desc'] ?? '1 Porsi',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: NutriColors.textMuted,
+                  const Expanded(
+                    child: Text(
+                      'Tambah Makanan',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFF8FAFC),
+                      ),
                     ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.more_vert, color: Color(0xFF94A3B8)),
+                    onPressed: () {},
                   ),
                 ],
               ),
             ),
+
+            // Search Input
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: NutriSpacing.sm,
-                vertical: NutriSpacing.xs,
-              ),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: NutriColors.calories.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(NutriRadius.sm),
+                color: const Color(0xFF18181B),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF27272A)),
               ),
-              child: Text(
-                "${food['kalori']} kkal",
-                style: const TextStyle(
-                  color: NutriColors.calories,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
+              child: Row(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16, right: 12),
+                    child: Icon(
+                      Icons.search,
+                      color: Color(0xFF64748B),
+                      size: 24,
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _searchFood,
+                      style: const TextStyle(
+                        color: Color(0xFFF8FAFC),
+                        fontSize: 14,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: 'Cari makanan (mis. Dada Ayam)',
+                        hintStyle: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 16),
+                        isDense: true,
+                        filled: true,
+                        fillColor: Color(0xFF18181B),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.mic, color: Color(0xFF64748B)),
+                    onPressed: () {},
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: NutriSpacing.sm),
-            const Icon(Icons.chevron_right, color: NutriColors.textMuted),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFoodDetailView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(NutriSpacing.lg),
-      child: Column(
-        children: [
-          // Back button
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => setState(() => _selectedFood = null),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: NutriSpacing.md,
-                    vertical: NutriSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: NutriColors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(NutriRadius.md),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.arrow_back,
-                        size: 18,
-                        color: NutriColors.textSecondary,
-                      ),
-                      SizedBox(width: NutriSpacing.xs),
-                      Text(
-                        "Kembali",
-                        style: TextStyle(color: NutriColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: NutriSpacing.lg),
+  Widget _buildSearchResults() {
+    if (_isSearching) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
+      );
+    }
 
-          // Food Detail Card
-          Container(
-            padding: const EdgeInsets.all(NutriSpacing.lg),
-            decoration: BoxDecoration(
-              color: NutriColors.surface,
-              borderRadius: BorderRadius.circular(NutriRadius.xl),
-              boxShadow: NutriShadows.medium,
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 48, color: Color(0xFF52525B)),
+            const SizedBox(height: 16),
+            Text(
+              'Makanan tidak ditemukan',
+              style: TextStyle(color: Colors.grey[600]),
             ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(NutriSpacing.md),
-                  decoration: BoxDecoration(
-                    gradient: NutriColors.cardGradient,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.restaurant_menu,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: NutriSpacing.md),
-                Text(
-                  _selectedFood!['nama'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: NutriColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  _selectedFood!['porsi_desc'] ?? '1 Porsi',
-                  style: const TextStyle(color: NutriColors.textMuted),
-                ),
-                const SizedBox(height: NutriSpacing.lg),
-                const Divider(),
-                const SizedBox(height: NutriSpacing.md),
+          ],
+        ),
+      );
+    }
 
-                // Nutrition Info
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNutrientInfo(
-                      "Kalori",
-                      "${(_selectedFood!['kalori'] * _porsi).toInt()}",
-                      "kkal",
-                      NutriColors.calories,
-                    ),
-                    _buildNutrientInfo(
-                      "Protein",
-                      (_selectedFood!['protein'] * _porsi).toStringAsFixed(1),
-                      "g",
-                      NutriColors.protein,
-                    ),
-                    _buildNutrientInfo(
-                      "Karbo",
-                      (_selectedFood!['karbo'] * _porsi).toStringAsFixed(1),
-                      "g",
-                      NutriColors.carbs,
-                    ),
-                    _buildNutrientInfo(
-                      "Lemak",
-                      (_selectedFood!['lemak'] * _porsi).toStringAsFixed(1),
-                      "g",
-                      NutriColors.fat,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: NutriSpacing.lg),
-
-          // Portion Selector
-          Container(
-            padding: const EdgeInsets.all(NutriSpacing.lg),
-            decoration: BoxDecoration(
-              color: NutriColors.surface,
-              borderRadius: BorderRadius.circular(NutriRadius.lg),
-              boxShadow: NutriShadows.small,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Jumlah Porsi",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: NutriColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: NutriSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildPortionButton(Icons.remove, () => _updatePorsi(-0.5)),
-                    const SizedBox(width: NutriSpacing.lg),
-                    Container(
-                      width: 80,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: NutriSpacing.md,
-                        vertical: NutriSpacing.sm,
-                      ),
-                      decoration: BoxDecoration(
-                        color: NutriColors.primaryBg,
-                        borderRadius: BorderRadius.circular(NutriRadius.md),
-                      ),
-                      child: Text(
-                        _porsi.toString(),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: NutriColors.primary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(width: NutriSpacing.lg),
-                    _buildPortionButton(Icons.add, () => _updatePorsi(0.5)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: NutriSpacing.lg),
-
-          // Save Button
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: () => _simpanMakanan(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: NutriColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(NutriRadius.md),
-                ),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline),
-                  SizedBox(width: NutriSpacing.sm),
-                  Text(
-                    "SIMPAN KE RIWAYAT",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 100, top: 8),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final food = _searchResults[index];
+        return FoodCard(
+          food: food,
+          isFavorited: _favoritesSet.contains(food['nama']),
+          onToggleFavorite: () => _toggleFavorite(food),
+          onAdd: () => _addToSelected(food),
+        );
+      },
     );
   }
 
-  Widget _buildNutrientInfo(
-    String label,
-    String value,
-    String unit,
-    Color color,
-  ) {
+  Widget _buildDefaultView() {
     return Column(
       children: [
+        // Tab Bar
         Container(
-          width: 48,
           height: 48,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Color(0xFF27272A))),
           ),
-          child: Center(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 11,
-              ),
-            ),
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: const Color(0xFF3B82F6),
+            indicatorWeight: 3,
+            labelColor: const Color(0xFF3B82F6),
+            unselectedLabelColor: const Color(0xFF94A3B8),
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            tabs: const [
+              Tab(text: "TERKINI"),
+              Tab(text: "FAVORIT"),
+            ],
           ),
         ),
-        const SizedBox(height: NutriSpacing.xs),
-        Text(
-          "$unit",
-          style: TextStyle(fontSize: 11, color: color.withOpacity(0.8)),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: NutriColors.textMuted),
+
+        // Tab Content
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // Recent Content
+              _recentFoods.isEmpty
+                  ? _buildEmptyState("Belum ada riwayat makan")
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 100, top: 16),
+                      itemCount: _recentFoods.length,
+                      itemBuilder: (context, index) {
+                        final food = _recentFoods[index];
+                        return FoodCard(
+                          food: food,
+                          isFavorited: _favoritesSet.contains(food['nama']),
+                          onToggleFavorite: () => _toggleFavorite(food),
+                          onAdd: () => _addToSelected(food),
+                        );
+                      },
+                    ),
+
+              // Favorites Content
+              _favoriteFoods.isEmpty
+                  ? _buildEmptyState("Belum ada makanan favorit")
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 100, top: 16),
+                      itemCount: _favoriteFoods.length,
+                      itemBuilder: (context, index) {
+                        final food = _favoriteFoods[index];
+                        return FoodCard(
+                          food: food,
+                          isFavorited: true,
+                          onToggleFavorite: () => _toggleFavorite(food),
+                          onAdd: () => _addToSelected(food),
+                        );
+                      },
+                    ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPortionButton(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.history, size: 48, color: Color(0xFF52525B)),
+          const SizedBox(height: 16),
+          Text(message, style: const TextStyle(color: Color(0xFF71717A))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomActionBar() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: Container(
-        padding: const EdgeInsets.all(NutriSpacing.md),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: NutriColors.primary,
-          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF09090B).withOpacity(0),
+              const Color(0xFF09090B),
+              const Color(0xFF09090B),
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
         ),
-        child: Icon(icon, color: Colors.white),
-      ),
-    );
-  }
-
-  void _updatePorsi(double delta) {
-    double newValue = _porsi + delta;
-    if (newValue < 0.5) newValue = 0.5;
-    if (newValue > 10) newValue = 10;
-    setState(() {
-      _porsi = newValue;
-      _porsiController.text = _porsi.toString();
-    });
-  }
-
-  Widget _buildEmptySearchState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(NutriSpacing.xl),
-            decoration: BoxDecoration(
-              color: NutriColors.surfaceAlt,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.restaurant_menu,
-              size: 48,
-              color: NutriColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: NutriSpacing.md),
-          const Text(
-            "Cari makananmu di atas",
-            style: TextStyle(
-              color: NutriColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: NutriSpacing.xs),
-          const Text(
-            "Dataset berisi 1300+ makanan Indonesia",
-            style: TextStyle(color: NutriColors.textMuted, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoResultsState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(NutriSpacing.xl),
-            decoration: BoxDecoration(
-              color: NutriColors.warningBg,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.search_off,
-              size: 48,
-              color: NutriColors.warning,
-            ),
-          ),
-          const SizedBox(height: NutriSpacing.md),
-          const Text(
-            "Makanan tidak ditemukan",
-            style: TextStyle(
-              color: NutriColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: NutriSpacing.xs),
-          const Text(
-            "Coba kata kunci yang berbeda",
-            style: TextStyle(color: NutriColors.textMuted, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _simpanMakanan(BuildContext context) async {
-    final appData = AppData();
-    if (appData.activeUserId == null) return;
-
-    Map<String, dynamic> row = {
-      'user_id': appData.activeUserId,
-      'nama': _selectedFood!['nama'],
-      'kalori': (_selectedFood!['kalori'] * _porsi).toInt(),
-      'protein': _selectedFood!['protein'] * _porsi,
-      'karbo': _selectedFood!['karbo'] * _porsi,
-      'lemak': _selectedFood!['lemak'] * _porsi,
-      'porsi': _porsi,
-      'waktu': DateTime.now().toString(),
-    };
-
-    await DatabaseHelper.instance.insertMakanan(row);
-
-    appData.konsumsiKalori += (row['kalori'] as int);
-    appData.riwayatMakan.insert(0, row);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
+        child: SafeArea(
+          top: false,
+          child: Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: NutriSpacing.sm),
-              Text("${_selectedFood!['nama']} berhasil disimpan!"),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Total Dipilih',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '$_totalCalories',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFF8FAFC),
+                        ),
+                      ),
+                      const Text(
+                        ' kcal',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(width: 24),
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => _simpanSemuaMakanan(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B82F6),
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: const Color(0xFF3B82F6).withOpacity(0.4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Simpan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          backgroundColor: NutriColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(NutriRadius.md),
-          ),
         ),
-      );
+      ),
+    );
+  }
+
+  Future<void> _simpanSemuaMakanan(BuildContext context) async {
+    try {
+      final userId = ref.read(userProvider).id;
+
+      if (userId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User tidak ditemukan'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (_selectedFoods.isEmpty) return;
+
+      final messenger = ScaffoldMessenger.of(context);
+      final foodCount = _selectedFoods.length;
+
+      for (var food in _selectedFoods) {
+        await ref
+            .read(foodLogProvider.notifier)
+            .addFood(
+              nama: food['nama'] ?? 'Makanan',
+              kalori: (food['kalori'] as int? ?? 0),
+              protein: (food['protein'] as num? ?? 0).toDouble(),
+              karbo: (food['karbo'] as num? ?? 0).toDouble(),
+              lemak: (food['lemak'] as num? ?? 0).toDouble(),
+              porsi: 1.0,
+            );
+      }
+
+      if (!mounted) return;
 
       setState(() {
-        _selectedFood = null;
-        _porsi = 1.0;
-        _porsiController.text = "1.0";
+        _selectedFoods.clear();
         _searchController.clear();
         _searchResults = [];
       });
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('$foodCount makanan berhasil disimpan'),
+          backgroundColor: const Color(0xFF22C55E),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      await _loadInitialData();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 }

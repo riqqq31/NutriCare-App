@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
-import '../services/database_helper.dart';
-import '../models/app_data.dart';
-import '../core/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/user_provider.dart';
+import '../providers/food_log_provider.dart';
+import '../widgets/input/weight_slider.dart';
+import '../widgets/input/gender_selector.dart';
+import '../widgets/input/labeled_text_field.dart';
+import '../widgets/input/labeled_number_field.dart';
 
-class InputProfilScreen extends StatefulWidget {
+class InputProfilScreen extends ConsumerStatefulWidget {
   const InputProfilScreen({super.key});
 
   @override
-  State<InputProfilScreen> createState() => _InputProfilScreenState();
+  ConsumerState<InputProfilScreen> createState() => _InputProfilScreenState();
 }
 
-class _InputProfilScreenState extends State<InputProfilScreen> {
+class _InputProfilScreenState extends ConsumerState<InputProfilScreen> {
   final _formKey = GlobalKey<FormState>();
-  int _currentStep = 0;
 
   final _namaController = TextEditingController();
   final _usiaController = TextEditingController();
-  final _bbController = TextEditingController();
   final _tbController = TextEditingController();
 
   String _selectedGender = "Laki-laki";
   String _selectedActivity = "Jarang Olahraga (Sedenter)";
+  String _selectedTujuanDiet = "Maintenance";
+  double _beratBadan = 70.0;
+  bool _isLoading = false;
 
   final Map<String, double> _activityLevels = {
     "Jarang Olahraga (Sedenter)": 1.2,
@@ -29,414 +34,509 @@ class _InputProfilScreenState extends State<InputProfilScreen> {
     "Olahraga Berat (6-7 hari/minggu)": 1.725,
   };
 
+  final _dietDescriptions = {
+    'Cutting': 'Defisit kalori untuk turunkan berat badan',
+    'Maintenance': 'Pertahankan berat badan saat ini',
+    'Bulking': 'Surplus kalori untuk naikkan massa otot',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingData();
+  }
+
+  void _loadExistingData() {
+    final userState = ref.read(userProvider);
+    if (userState.nama.isNotEmpty) {
+      _namaController.text = userState.nama;
+      _usiaController.text = userState.usia.toString();
+      _tbController.text = userState.tinggiBadan.round().toString();
+      _selectedGender = userState.gender;
+      _beratBadan = userState.beratBadan > 0 ? userState.beratBadan : 70.0;
+      if (_activityLevels.containsKey(userState.aktivitas)) {
+        _selectedActivity = userState.aktivitas;
+      }
+      _selectedTujuanDiet = userState.tujuanDiet;
+    }
+  }
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _usiaController.dispose();
+    _tbController.dispose();
+    super.dispose();
+  }
+
   void _simpanDanLanjut() async {
-    if (_formKey.currentState!.validate()) {
-      final appData = AppData();
+    final formState = _formKey.currentState;
+    if (formState != null && formState.validate()) {
+      setState(() => _isLoading = true);
 
-      appData.nama = _namaController.text;
-      appData.gender = _selectedGender;
-      appData.usia = int.tryParse(_usiaController.text) ?? 25;
-      appData.beratBadan = double.tryParse(_bbController.text) ?? 0;
-      appData.tinggiBadan = double.tryParse(_tbController.text) ?? 0;
-      appData.aktivitas = _selectedActivity;
+      try {
+        if (ref.read(userProvider).id == null) {
+          throw Exception("User ID tidak ditemukan. Silakan login ulang.");
+        }
 
-      double bmr =
-          (10 * appData.beratBadan) +
-          (6.25 * appData.tinggiBadan) -
-          (5 * appData.usia);
-      if (appData.gender == "Laki-laki") {
-        bmr += 5;
-      } else {
-        bmr -= 161;
+        await ref
+            .read(userProvider.notifier)
+            .updateProfile(
+              nama: _namaController.text,
+              gender: _selectedGender,
+              usia: int.tryParse(_usiaController.text) ?? 25,
+              beratBadan: _beratBadan,
+              tinggiBadan: double.tryParse(_tbController.text) ?? 0,
+              aktivitas: _selectedActivity,
+              tujuanDiet: _selectedTujuanDiet,
+            );
+
+        await ref.read(foodLogProvider.notifier).loadTodayData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text("Profil berhasil disimpan!"),
+              backgroundColor: const Color(0xFF22C55E),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Gagal menyimpan: ${e.toString()}"),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
-      double activityFactor = _activityLevels[_selectedActivity] ?? 1.2;
-      appData.targetKalori = (bmr * activityFactor).toInt();
-
-      if (appData.activeUserId != null) {
-        await DatabaseHelper.instance.updateProfile(appData.activeUserId!, {
-          'nama': appData.nama,
-          'gender': appData.gender,
-          'usia': appData.usia,
-          'berat': appData.beratBadan,
-          'tinggi': appData.tinggiBadan,
-          'aktivitas': appData.aktivitas,
-        });
-      }
-
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Mohon lengkapi data dengan benar"),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NutriColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(NutriSpacing.lg),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: NutriColors.primaryBg,
-                          borderRadius: BorderRadius.circular(NutriRadius.md),
-                        ),
-                        child: const Icon(
-                          Icons.person_outline,
-                          color: NutriColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: NutriSpacing.md),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Lengkapi Profil",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: NutriColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              "Data ini untuk menghitung kebutuhan gizimu",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: NutriColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: NutriSpacing.lg),
-                  // Progress Indicator
-                  Row(
-                    children: List.generate(3, (index) {
-                      bool isActive = index <= _currentStep;
-                      return Expanded(
-                        child: Container(
-                          margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? NutriColors.primary
-                                : NutriColors.border,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
-
-            // Form Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: NutriSpacing.lg,
-                ),
-                child: Form(
-                  key: _formKey,
+      backgroundColor: const Color(0xFF09090B),
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Step 1: Personal Info
-                      _buildSectionCard(
-                        title: "Informasi Pribadi",
-                        icon: Icons.badge_outlined,
-                        children: [
-                          _buildTextField(
-                            controller: _namaController,
-                            label: "Nama Panggilan",
-                            icon: Icons.person_outline,
-                            validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                          ),
-                          const SizedBox(height: NutriSpacing.md),
-                          _buildDropdown(
-                            value: _selectedGender,
-                            label: "Jenis Kelamin",
-                            icon: Icons.wc_outlined,
-                            items: ["Laki-laki", "Perempuan"],
-                            onChanged: (v) =>
-                                setState(() => _selectedGender = v!),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: NutriSpacing.md),
+                      const SizedBox(height: 24),
 
-                      // Step 2: Physical Data
-                      _buildSectionCard(
-                        title: "Data Fisik",
-                        icon: Icons.monitor_weight_outlined,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTextField(
-                                  controller: _usiaController,
-                                  label: "Usia",
-                                  suffix: "tahun",
-                                  icon: Icons.cake_outlined,
-                                  keyboardType: TextInputType.number,
-                                  validator: (v) => v!.isEmpty ? 'Isi' : null,
-                                ),
-                              ),
-                              const SizedBox(width: NutriSpacing.md),
-                              Expanded(
-                                child: _buildTextField(
-                                  controller: _bbController,
-                                  label: "Berat",
-                                  suffix: "kg",
-                                  icon: Icons.fitness_center,
-                                  keyboardType: TextInputType.number,
-                                  validator: (v) => v!.isEmpty ? 'Isi' : null,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: NutriSpacing.md),
-                          _buildTextField(
-                            controller: _tbController,
-                            label: "Tinggi Badan",
-                            suffix: "cm",
-                            icon: Icons.height,
-                            keyboardType: TextInputType.number,
-                            validator: (v) => v!.isEmpty ? 'Isi' : null,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: NutriSpacing.md),
+                      // Avatar Section
+                      _buildAvatarSection(),
+                      const SizedBox(height: 24),
 
-                      // Step 3: Activity Level
-                      _buildSectionCard(
-                        title: "Tingkat Aktivitas",
-                        icon: Icons.directions_run_outlined,
+                      // Name Field - Using extracted widget
+                      LabeledTextField(
+                        label: 'Nama Lengkap',
+                        controller: _namaController,
+                        icon: Icons.person,
+                        hint: 'Masukkan nama lengkap',
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Gender Selection - Using extracted widget
+                      GenderSelector(
+                        selectedGender: _selectedGender,
+                        onGenderChanged: (value) =>
+                            setState(() => _selectedGender = value),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Age & Height Row - Using extracted widgets
+                      Row(
                         children: [
-                          ...(_activityLevels.keys.map((activity) {
-                            bool isSelected = _selectedActivity == activity;
-                            return GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedActivity = activity),
-                              child: Container(
-                                margin: const EdgeInsets.only(
-                                  bottom: NutriSpacing.sm,
-                                ),
-                                padding: const EdgeInsets.all(NutriSpacing.md),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? NutriColors.primaryBg
-                                      : NutriColors.surfaceAlt,
-                                  borderRadius: BorderRadius.circular(
-                                    NutriRadius.md,
-                                  ),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? NutriColors.primary
-                                        : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: isSelected
-                                            ? NutriColors.primary
-                                            : NutriColors.border,
-                                      ),
-                                      child: isSelected
-                                          ? const Icon(
-                                              Icons.check,
-                                              color: Colors.white,
-                                              size: 14,
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(width: NutriSpacing.md),
-                                    Expanded(
-                                      child: Text(
-                                        activity,
-                                        style: TextStyle(
-                                          color: isSelected
-                                              ? NutriColors.primary
-                                              : NutriColors.textPrimary,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          })),
+                          Expanded(
+                            child: LabeledNumberField(
+                              label: 'Umur',
+                              controller: _usiaController,
+                              suffix: 'thn',
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: LabeledNumberField(
+                              label: 'Tinggi Badan',
+                              controller: _tbController,
+                              suffix: 'cm',
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: NutriSpacing.lg),
+                      const SizedBox(height: 20),
+
+                      // Weight Slider - Using extracted widget
+                      WeightSlider(
+                        weight: _beratBadan,
+                        onChanged: (value) =>
+                            setState(() => _beratBadan = value),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Activity Level
+                      _buildActivityDropdown(),
+                      const SizedBox(height: 20),
+
+                      // Diet Goal
+                      _buildDietGoalDropdown(),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomButton(),
+    );
+  }
 
-            // Bottom Button
-            Container(
-              padding: const EdgeInsets.all(NutriSpacing.lg),
-              decoration: BoxDecoration(
-                color: NutriColors.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _simpanDanLanjut,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: NutriColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(NutriRadius.md),
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF09090B).withOpacity(0.9),
+        border: const Border(
+          bottom: BorderSide(color: Color(0x0DFFFFFF), width: 1),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF18181B),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0x0DFFFFFF),
+                      width: 1,
                     ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.calculate_outlined),
-                      SizedBox(width: NutriSpacing.sm),
-                      Text(
-                        "HITUNG KEBUTUHAN GIZI",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Color(0xFF94A3B8),
+                    size: 22,
                   ),
                 ),
               ),
-            ),
-          ],
+              const Text(
+                'Data Pribadi',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFF8FAFC),
+                ),
+              ),
+              const SizedBox(width: 40),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(NutriSpacing.md),
-      decoration: BoxDecoration(
-        color: NutriColors.surface,
-        borderRadius: BorderRadius.circular(NutriRadius.lg),
-        boxShadow: NutriShadows.small,
-      ),
+  Widget _buildAvatarSection() {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Stack(
             children: [
-              Icon(icon, color: NutriColors.primary, size: 20),
-              const SizedBox(width: NutriSpacing.sm),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: NutriColors.textPrimary,
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF27272A),
+                  border: Border.all(color: const Color(0xFF18181B), width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(Icons.person, color: Color(0xFF94A3B8), size: 40),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF60A5FA),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF09090B),
+                      width: 4,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF60A5FA).withOpacity(0.3),
+                        blurRadius: 15,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Color(0xFF09090B),
+                    size: 14,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: NutriSpacing.md),
-          ...children,
+          const SizedBox(height: 12),
+          const Text(
+            'Ketuk untuk mengubah foto',
+            style: TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    IconData? icon,
-    String? suffix,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        suffixText: suffix,
-        prefixIcon: icon != null
-            ? Icon(icon, color: NutriColors.textMuted)
-            : null,
-        filled: true,
-        fillColor: NutriColors.surfaceAlt,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NutriRadius.md),
-          borderSide: BorderSide.none,
+  Widget _buildActivityDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Aktivitas Harian',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NutriRadius.md),
-          borderSide: const BorderSide(color: NutriColors.primary, width: 2),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF18181B),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
+          ),
+          child: DropdownButtonFormField<String>(
+            initialValue: _selectedActivity,
+            dropdownColor: const Color(0xFF27272A),
+            icon: const Icon(Icons.expand_more, color: Color(0xFF94A3B8)),
+            decoration: InputDecoration(
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 16, right: 12),
+                child: Icon(
+                  Icons.directions_run,
+                  color: Color(0xFF94A3B8),
+                  size: 22,
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 50),
+              filled: true,
+              fillColor: const Color(0xFF18181B),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.only(right: 16),
+            ),
+            style: const TextStyle(color: Color(0xFFF8FAFC), fontSize: 14),
+            items: _activityLevels.keys.map((activity) {
+              return DropdownMenuItem<String>(
+                value: activity,
+                child: Text(
+                  activity,
+                  style: const TextStyle(color: Color(0xFFF8FAFC)),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() => _selectedActivity = value!),
+          ),
         ),
-      ),
+        const Padding(
+          padding: EdgeInsets.only(left: 4, top: 8),
+          child: Text(
+            'Pilih tingkat aktivitas untuk menghitung kebutuhan kalori harian Anda.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildDropdown({
-    required String value,
-    required String label,
-    required IconData icon,
-    required List<String> items,
-    required void Function(String?) onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: NutriColors.textMuted),
-        filled: true,
-        fillColor: NutriColors.surfaceAlt,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(NutriRadius.md),
-          borderSide: BorderSide.none,
+  Widget _buildDietGoalDropdown() {
+    final dietOptions = ['Cutting', 'Maintenance', 'Bulking'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Tujuan Diet',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF18181B),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
+          ),
+          child: DropdownButtonFormField<String>(
+            initialValue: _selectedTujuanDiet,
+            dropdownColor: const Color(0xFF27272A),
+            icon: const Icon(Icons.expand_more, color: Color(0xFF94A3B8)),
+            decoration: InputDecoration(
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 16, right: 12),
+                child: Icon(
+                  Icons.flag_outlined,
+                  color: Color(0xFF94A3B8),
+                  size: 22,
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 50),
+              filled: true,
+              fillColor: const Color(0xFF18181B),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.only(right: 16),
+            ),
+            style: const TextStyle(color: Color(0xFFF8FAFC), fontSize: 14),
+            items: dietOptions.map((goal) {
+              return DropdownMenuItem<String>(
+                value: goal,
+                child: Text(
+                  goal,
+                  style: const TextStyle(color: Color(0xFFF8FAFC)),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() => _selectedTujuanDiet = value!),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, top: 8),
+          child: Text(
+            _dietDescriptions[_selectedTujuanDiet] ?? '',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomButton() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      decoration: BoxDecoration(
+        color: const Color(0xFF09090B).withOpacity(0.9),
+        border: const Border(
+          top: BorderSide(color: Color(0x0DFFFFFF), width: 1),
         ),
       ),
-      items: items.map((String val) {
-        return DropdownMenuItem(value: val, child: Text(val));
-      }).toList(),
-      onChanged: onChanged,
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: _isLoading ? null : _simpanDanLanjut,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF60A5FA),
+            foregroundColor: const Color(0xFF09090B),
+            disabledBackgroundColor: const Color(0xFF60A5FA).withOpacity(0.5),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF09090B),
+                    ),
+                  ),
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Simpan Perubahan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.check, size: 20),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 }

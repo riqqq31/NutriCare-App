@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget untuk menampilkan detail nutrisi dengan progress bar
 class NutrientCard extends StatelessWidget {
@@ -24,12 +25,14 @@ class NutrientCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(
+              alpha: AppColors.isDark(context) ? 0.4 : 0.1,
+            ),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -42,9 +45,9 @@ class NutrientCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withOpacity(0.2), width: 1),
+              border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
             ),
             child: Icon(icon, color: color, size: 24),
           ),
@@ -57,18 +60,18 @@ class NutrientCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFF8FAFC),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Target: ${target.round()}g',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFFA1A1AA),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],
@@ -84,17 +87,20 @@ class NutrientCard extends StatelessWidget {
                 children: [
                   Text(
                     current.round().toString(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFF8FAFC),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 2, left: 2),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2, left: 2),
                     child: Text(
                       'g',
-                      style: TextStyle(fontSize: 12, color: Color(0xFFA1A1AA)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
                   ),
                 ],
@@ -107,7 +113,9 @@ class NutrientCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: const Color(0xFF27272A),
+                    backgroundColor: AppColors.isDark(context)
+                        ? const Color(0xFF27272A)
+                        : const Color(0xFFE2E8F0),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),

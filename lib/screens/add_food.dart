@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/app_colors.dart';
 import '../providers/user_provider.dart';
 import '../providers/food_log_provider.dart';
 import '../services/database_helper.dart';
 import '../widgets/food/food_card.dart';
+import 'add_custom_food_screen.dart';
 
 class AddFoodScreen extends ConsumerStatefulWidget {
-  const AddFoodScreen({super.key});
+  final VoidCallback? onBack;
+
+  const AddFoodScreen({super.key, this.onBack});
 
   @override
   ConsumerState<AddFoodScreen> createState() => _AddFoodScreenState();
@@ -99,6 +103,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
           karbo: (food['karbo'] as num? ?? 0).toDouble(),
           lemak: (food['lemak'] as num? ?? 0).toDouble(),
           porsiDesc: food['porsi_desc'] as String?,
+          image: food['image'] as String?,
         );
 
         if (result != -1 && mounted) {
@@ -154,10 +159,38 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
     });
   }
 
+  void _navigateToCustomFood() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddCustomFoodScreen()),
+    );
+    if (result == true) {
+      // Refresh data after adding custom food
+      await _loadInitialData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: AppColors.background(context),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _navigateToCustomFood,
+        backgroundColor: AppColors.isDark(context)
+            ? AppColors.darkCard
+            : AppColors.lightCard,
+        foregroundColor: AppColors.textPrimary(context),
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 1),
+        ),
+        icon: const Icon(Icons.add, size: 20, color: AppColors.primary),
+        label: const Text(
+          'Manual',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
+      ),
       body: Stack(
         children: [
           Column(
@@ -183,7 +216,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
 
   Widget _buildHeader() {
     return Container(
-      color: const Color(0xFF09090B),
+      color: AppColors.background(context),
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -194,27 +227,30 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textSecondary(context),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      if (widget.onBack != null) {
+                        widget.onBack!();
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Tambah Makanan',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFF8FAFC),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.more_vert, color: Color(0xFF94A3B8)),
-                    onPressed: () {},
-                  ),
+                  const SizedBox(width: 48), // Spacer for balance
                 ],
               ),
             ),
@@ -223,17 +259,17 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF18181B),
+                color: AppColors.card(context),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF27272A)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Row(
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(left: 16, right: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, right: 12),
                     child: Icon(
                       Icons.search,
-                      color: Color(0xFF64748B),
+                      color: AppColors.textSecondary(context),
                       size: 24,
                     ),
                   ),
@@ -241,28 +277,27 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
                     child: TextField(
                       controller: _searchController,
                       onChanged: _searchFood,
-                      style: const TextStyle(
-                        color: Color(0xFFF8FAFC),
+                      style: TextStyle(
+                        color: AppColors.textPrimary(context),
                         fontSize: 14,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Cari makanan (mis. Dada Ayam)',
                         hintStyle: TextStyle(
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary(context),
                           fontSize: 14,
                         ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
                         isDense: true,
                         filled: true,
-                        fillColor: Color(0xFF18181B),
+                        fillColor: AppColors.card(context),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.mic, color: Color(0xFF64748B)),
-                    onPressed: () {},
-                  ),
+                  const SizedBox(width: 16), // Right padding
                 ],
               ),
             ),
@@ -276,7 +311,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
   Widget _buildSearchResults() {
     if (_isSearching) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
@@ -285,11 +320,15 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off, size: 48, color: Color(0xFF52525B)),
+            Icon(
+              Icons.search_off,
+              size: 48,
+              color: AppColors.textSecondary(context),
+            ),
             const SizedBox(height: 16),
             Text(
               'Makanan tidak ditemukan',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
           ],
         ),
@@ -317,15 +356,17 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
         // Tab Bar
         Container(
           height: 48,
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Color(0xFF27272A))),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.border(context)),
+            ),
           ),
           child: TabBar(
             controller: _tabController,
-            indicatorColor: const Color(0xFF3B82F6),
+            indicatorColor: AppColors.primary,
             indicatorWeight: 3,
-            labelColor: const Color(0xFF3B82F6),
-            unselectedLabelColor: const Color(0xFF94A3B8),
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary(context),
             labelStyle: const TextStyle(fontWeight: FontWeight.bold),
             tabs: const [
               Tab(text: "TERKINI"),
@@ -384,9 +425,16 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.history, size: 48, color: Color(0xFF52525B)),
+          Icon(
+            Icons.history,
+            size: 48,
+            color: AppColors.textSecondary(context),
+          ),
           const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: Color(0xFF71717A))),
+          Text(
+            message,
+            style: TextStyle(color: AppColors.textSecondary(context)),
+          ),
         ],
       ),
     );
@@ -404,9 +452,9 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF09090B).withOpacity(0),
-              const Color(0xFF09090B),
-              const Color(0xFF09090B),
+              AppColors.background(context).withValues(alpha: 0),
+              AppColors.background(context),
+              AppColors.background(context),
             ],
             stops: const [0.0, 0.4, 1.0],
           ),
@@ -419,11 +467,11 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Total Dipilih',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textSecondary(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -433,17 +481,17 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
                     children: [
                       Text(
                         '$_totalCalories',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFF8FAFC),
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
-                      const Text(
+                      Text(
                         ' kcal',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -460,7 +508,9 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
                       backgroundColor: const Color(0xFF3B82F6),
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      shadowColor: const Color(0xFF3B82F6).withOpacity(0.4),
+                      shadowColor: const Color(
+                        0xFF3B82F6,
+                      ).withValues(alpha: 0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -520,6 +570,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen>
               karbo: (food['karbo'] as num? ?? 0).toDouble(),
               lemak: (food['lemak'] as num? ?? 0).toDouble(),
               porsi: 1.0,
+              image: food['image'] as String?,
             );
       }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget untuk memilih gender dengan dua opsi (pria/wanita)
 class GenderSelector extends StatelessWidget {
@@ -16,25 +17,37 @@ class GenderSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             'Jenis Kelamin',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ),
         Row(
           children: [
             Expanded(
-              child: _buildGenderOption('Laki-laki', Icons.male, 'Pria'),
+              child: _buildGenderOption(
+                context,
+                'Laki-laki',
+                Icons.male,
+                'Pria',
+                const Color(0xFF60A5FA), // Warna Biru
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildGenderOption('Perempuan', Icons.female, 'Wanita'),
+              child: _buildGenderOption(
+                context,
+                'Perempuan',
+                Icons.female,
+                'Wanita',
+                const Color(0xFFF472B6), // Warna Pink
+              ),
             ),
           ],
         ),
@@ -42,7 +55,13 @@ class GenderSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildGenderOption(String value, IconData icon, String label) {
+  Widget _buildGenderOption(
+    BuildContext context,
+    String value,
+    IconData icon,
+    String label,
+    Color activeColor,
+  ) {
     final isSelected = selectedGender == value;
     return GestureDetector(
       onTap: () => onGenderChanged(value),
@@ -50,13 +69,11 @@ class GenderSelector extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF60A5FA).withOpacity(0.1)
-              : const Color(0xFF18181B),
+              ? activeColor.withValues(alpha: 0.1)
+              : AppColors.card(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF60A5FA)
-                : const Color(0x1AFFFFFF),
+            color: isSelected ? activeColor : AppColors.border(context),
             width: 1,
           ),
         ),
@@ -66,8 +83,8 @@ class GenderSelector extends StatelessWidget {
             Icon(
               icon,
               color: isSelected
-                  ? const Color(0xFF60A5FA)
-                  : const Color(0xFF94A3B8),
+                  ? activeColor
+                  : AppColors.textSecondary(context),
               size: 22,
             ),
             const SizedBox(width: 8),
@@ -77,8 +94,8 @@ class GenderSelector extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: isSelected
-                    ? const Color(0xFF60A5FA)
-                    : const Color(0xFFF8FAFC),
+                    ? activeColor
+                    : AppColors.textPrimary(context),
               ),
             ),
           ],

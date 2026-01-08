@@ -22,7 +22,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 5, // Version 5: Added database indexes for performance
+      version: 7, // Version 7: Added profile_photo for users
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -41,7 +41,8 @@ class DatabaseHelper {
         berat REAL,
         tinggi REAL,
         aktivitas TEXT,
-        tujuan_diet TEXT
+        tujuan_diet TEXT,
+        profile_photo TEXT
       )
     ''');
 
@@ -54,7 +55,8 @@ class DatabaseHelper {
         protein REAL DEFAULT 0,
         karbo REAL DEFAULT 0,
         lemak REAL DEFAULT 0,
-        porsi_desc TEXT
+        porsi_desc TEXT,
+        image TEXT
       )
     ''');
 
@@ -70,6 +72,7 @@ class DatabaseHelper {
         lemak REAL,
         porsi REAL,
         waktu TEXT NOT NULL,
+        image TEXT,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     ''');
@@ -85,6 +88,7 @@ class DatabaseHelper {
         karbo REAL,
         lemak REAL,
         porsi_desc TEXT,
+        image TEXT,
         created_at TEXT NOT NULL,
         UNIQUE(user_id, nama),
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
@@ -182,13 +186,56 @@ class DatabaseHelper {
       // Add indexes for better query performance
       await _createIndexes(db);
     }
+    if (oldVersion < 6) {
+      // Version 6: Add image column to all tables and reimport nutrition.csv
+      // Drop and recreate master_makanan with new schema
+      await db.execute('DROP TABLE IF EXISTS master_makanan');
+      await db.execute('''
+        CREATE TABLE master_makanan (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nama TEXT NOT NULL,
+          kalori INTEGER NOT NULL,
+          protein REAL DEFAULT 0,
+          karbo REAL DEFAULT 0,
+          lemak REAL DEFAULT 0,
+          porsi_desc TEXT,
+          image TEXT
+        )
+      ''');
+      await _importCsvToDatabase(db);
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_master_nama ON master_makanan(nama)',
+      );
+
+      // Add image column to riwayat
+      try {
+        await db.execute('ALTER TABLE riwayat ADD COLUMN image TEXT');
+      } catch (e) {
+        // Column may already exist
+      }
+
+      // Add image column to favorites
+      try {
+        await db.execute('ALTER TABLE favorites ADD COLUMN image TEXT');
+      } catch (e) {
+        // Column may already exist
+      }
+    }
+    if (oldVersion < 7) {
+      // Version 7: Add profile_photo column to users table
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN profile_photo TEXT');
+      } catch (e) {
+        // Column may already exist
+      }
+    }
   }
 
-  /// Import tabel.csv ke master_makanan
+  /// Import nutrition.csv ke master_makanan (with image URLs)
   Future<void> _importCsvToDatabase(Database db) async {
     try {
       // Baca file CSV dari assets
-      final csvString = await rootBundle.loadString('assets/tabel.csv');
+      final csvString = await rootBundle.loadString('assets/nutrition.csv');
 
       // Parse CSV (delimiter = semicolon)
       List<List<dynamic>> csvData = const CsvToListConverter(
@@ -197,20 +244,22 @@ class DatabaseHelper {
       ).convert(csvString);
 
       // Skip header row (index 0)
-      // Format: calories;proteins;fat;carbohydrate;name
+      // Format: id;calories;proteins;fat;carbohydrate;name;image
       if (csvData.length > 1) {
         // Batch insert untuk performa
         Batch batch = db.batch();
 
         for (int i = 1; i < csvData.length; i++) {
           var row = csvData[i];
-          if (row.length >= 5) {
+          if (row.length >= 7) {
             // Parse values - handle both int and double
-            int kalori = _parseToInt(row[0]);
-            double protein = _parseToDouble(row[1]);
-            double lemak = _parseToDouble(row[2]);
-            double karbo = _parseToDouble(row[3]);
-            String nama = row[4].toString().trim();
+            // Column order: id;calories;proteins;fat;carbohydrate;name;image
+            int kalori = _parseToInt(row[1]);
+            double protein = _parseToDouble(row[2]);
+            double lemak = _parseToDouble(row[3]);
+            double karbo = _parseToDouble(row[4]);
+            String nama = row[5].toString().trim();
+            String image = row.length > 6 ? row[6].toString().trim() : '';
 
             if (nama.isNotEmpty) {
               batch.insert('master_makanan', {
@@ -220,6 +269,7 @@ class DatabaseHelper {
                 'karbo': karbo,
                 'lemak': lemak,
                 'porsi_desc': '1 Porsi (100g)',
+                'image': image.isNotEmpty ? image : null,
               });
             }
           }
@@ -227,7 +277,9 @@ class DatabaseHelper {
 
         await batch.commit(noResult: true);
       }
-    } catch (e) {}
+    } catch (e) {
+      // Log error silently
+    }
   }
 
   int _parseToInt(dynamic value) {
@@ -437,6 +489,28 @@ Mulailah tracking hari ini dan lihat perubahan dalam 30 hari!''',
     );
   }
 
+  /// Add custom food to master_makanan (untuk reuse di search)
+  Future<int> addCustomFood({
+    required String nama,
+    required int kalori,
+    required double protein,
+    required double karbo,
+    required double lemak,
+    String? porsiDesc,
+    String? image,
+  }) async {
+    final db = await instance.database;
+    return await db.insert('master_makanan', {
+      'nama': nama,
+      'kalori': kalori,
+      'protein': protein,
+      'karbo': karbo,
+      'lemak': lemak,
+      'porsi_desc': porsiDesc,
+      'image': image,
+    });
+  }
+
   // Sisanya (Login, Register, GetRiwayat) sama kayak sebelumnya
   Future<int> insertMakanan(Map<String, dynamic> row) async {
     final db = await instance.database;
@@ -616,6 +690,12 @@ Mulailah tracking hari ini dan lihat perubahan dalam 30 hari!''',
     );
   }
 
+  /// Delete single food item from history by ID
+  Future<int> deleteRiwayatById(int id) async {
+    final db = await instance.database;
+    return await db.delete('riwayat', where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<List<Map<String, dynamic>>> getWeeklyStats(int userId) async {
     final db = await instance.database;
     return await db.rawQuery(
@@ -696,6 +776,7 @@ Mulailah tracking hari ini dan lihat perubahan dalam 30 hari!''',
     required double karbo,
     required double lemak,
     String? porsiDesc,
+    String? image,
   }) async {
     final db = await instance.database;
     try {
@@ -707,6 +788,7 @@ Mulailah tracking hari ini dan lihat perubahan dalam 30 hari!''',
         'karbo': karbo,
         'lemak': lemak,
         'porsi_desc': porsiDesc ?? '1 Porsi',
+        'image': image,
         'created_at': DateTime.now().toString(),
       });
     } catch (e) {

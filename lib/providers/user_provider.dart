@@ -4,6 +4,7 @@ import '../services/database_helper.dart';
 /// State class untuk user session
 class UserState {
   final int? id;
+  final String username;
   final String nama;
   final String gender;
   final int usia;
@@ -11,6 +12,7 @@ class UserState {
   final double tinggiBadan;
   final String aktivitas;
   final String tujuanDiet; // Cutting, Maintenance, Bulking
+  final String? profilePhoto; // Path to local profile photo
   final int targetKalori;
   final double targetProtein;
   final double targetKarbo;
@@ -18,6 +20,7 @@ class UserState {
 
   const UserState({
     this.id,
+    this.username = "",
     this.nama = "",
     this.gender = "Laki-laki",
     this.usia = 25,
@@ -25,6 +28,7 @@ class UserState {
     this.tinggiBadan = 0,
     this.aktivitas = "Jarang Olahraga",
     this.tujuanDiet = "Maintenance",
+    this.profilePhoto,
     this.targetKalori = 2000,
     this.targetProtein = 75,
     this.targetKarbo = 275,
@@ -33,6 +37,7 @@ class UserState {
 
   UserState copyWith({
     int? id,
+    String? username,
     String? nama,
     String? gender,
     int? usia,
@@ -40,6 +45,7 @@ class UserState {
     double? tinggiBadan,
     String? aktivitas,
     String? tujuanDiet,
+    String? profilePhoto,
     int? targetKalori,
     double? targetProtein,
     double? targetKarbo,
@@ -47,6 +53,7 @@ class UserState {
   }) {
     return UserState(
       id: id ?? this.id,
+      username: username ?? this.username,
       nama: nama ?? this.nama,
       gender: gender ?? this.gender,
       usia: usia ?? this.usia,
@@ -54,6 +61,7 @@ class UserState {
       tinggiBadan: tinggiBadan ?? this.tinggiBadan,
       aktivitas: aktivitas ?? this.aktivitas,
       tujuanDiet: tujuanDiet ?? this.tujuanDiet,
+      profilePhoto: profilePhoto ?? this.profilePhoto,
       targetKalori: targetKalori ?? this.targetKalori,
       targetProtein: targetProtein ?? this.targetProtein,
       targetKarbo: targetKarbo ?? this.targetKarbo,
@@ -76,10 +84,11 @@ class UserNotifier extends StateNotifier<UserState> {
     if (userData != null) {
       double berat = (userData['berat'] ?? 0).toDouble();
       double tinggi = (userData['tinggi'] ?? 0).toDouble();
-      int usia = userData['usia'] ?? 25;
+      int usia = userData['usia'] ?? 0;
       String gender = userData['gender'] ?? "Laki-laki";
       String aktivitas = userData['aktivitas'] ?? "Jarang Olahraga";
       String tujuanDiet = userData['tujuan_diet'] ?? "Maintenance";
+      String? profilePhoto = userData['profile_photo'] as String?;
 
       int baseTDEE = 2000;
       if (berat > 0 && tinggi > 0) {
@@ -94,6 +103,7 @@ class UserNotifier extends StateNotifier<UserState> {
 
       state = UserState(
         id: userData['id'],
+        username: userData['username'] ?? username,
         nama: userData['nama'] ?? username,
         gender: gender,
         usia: usia,
@@ -101,6 +111,7 @@ class UserNotifier extends StateNotifier<UserState> {
         tinggiBadan: tinggi,
         aktivitas: aktivitas,
         tujuanDiet: tujuanDiet,
+        profilePhoto: profilePhoto,
         targetKalori: targetKalori,
         targetProtein: makro['protein']!,
         targetKarbo: makro['karbo']!,
@@ -160,6 +171,17 @@ class UserNotifier extends StateNotifier<UserState> {
       targetKarbo: makro['karbo'],
       targetLemak: makro['lemak'],
     );
+  }
+
+  /// Update profile photo
+  Future<void> updateProfilePhoto(String photoPath) async {
+    if (state.id == null) return;
+
+    await DatabaseHelper.instance.updateProfile(state.id!, {
+      'profile_photo': photoPath,
+    });
+
+    state = state.copyWith(profilePhoto: photoPath);
   }
 
   /// Logout - reset state

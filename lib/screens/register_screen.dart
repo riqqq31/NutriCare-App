@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
+import '../core/app_colors.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -79,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: AppColors.background(context),
       body: Stack(
         children: [
           // Background Gradient Blurs
@@ -91,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF60A5FA).withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -103,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF818CF8).withOpacity(0.05),
+                color: const Color(0xFF818CF8).withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -123,16 +124,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF18181B),
+                            color: AppColors.card(context),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0x0DFFFFFF),
+                              color: AppColors.border(context),
                               width: 1,
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_back,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                             size: 20,
                           ),
                         ),
@@ -155,10 +156,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF18181B),
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(50),
                             border: Border.all(
-                              color: const Color(0x0DFFFFFF),
+                              color: AppColors.border(context),
                               width: 1,
                             ),
                           ),
@@ -169,17 +170,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFF60A5FA),
+                                  color: AppColors.primary,
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const Text(
+                              Text(
                                 'TRACK YOUR HEALTH',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textSecondary(context),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -189,12 +190,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 16),
 
                         // Title
-                        const Text(
+                        Text(
                           'Mulai Perjalanan\nSehatmu Hari Ini',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFFF8FAFC),
+                            color: AppColors.textPrimary(context),
                             height: 1.2,
                             letterSpacing: -0.5,
                           ),
@@ -202,11 +203,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 8),
 
                         // Subtitle
-                        const Text(
+                        Text(
                           'Buat akun baru untuk melacak nutrisi harian dan mencapai target kesehatan Anda.',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                             height: 1.5,
                           ),
                         ),
@@ -258,13 +259,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 margin: const EdgeInsets.only(top: 2),
                                 decoration: BoxDecoration(
                                   color: _agreeToTerms
-                                      ? const Color(0xFF60A5FA)
-                                      : const Color(0xFF18181B),
+                                      ? AppColors.primary
+                                      : AppColors.card(context),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: _agreeToTerms
-                                        ? const Color(0xFF60A5FA)
-                                        : const Color(0x33FFFFFF),
+                                        ? AppColors.primary
+                                        : AppColors.border(context),
                                     width: 1,
                                   ),
                                 ),
@@ -278,20 +279,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
+                            Expanded(
                               child: Text.rich(
                                 TextSpan(
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF94A3B8),
+                                    color: AppColors.textSecondary(context),
                                     height: 1.5,
                                   ),
-                                  children: [
+                                  children: const [
                                     TextSpan(text: 'Saya menyetujui '),
                                     TextSpan(
                                       text: 'Syarat & Ketentuan',
                                       style: TextStyle(
-                                        color: Color(0xFF60A5FA),
+                                        color: AppColors.primary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -299,7 +300,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     TextSpan(
                                       text: 'Kebijakan Privasi',
                                       style: TextStyle(
-                                        color: Color(0xFF60A5FA),
+                                        color: AppColors.primary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -319,11 +320,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _register,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF60A5FA),
-                              foregroundColor: const Color(0xFF09090B),
-                              disabledBackgroundColor: const Color(
-                                0xFF60A5FA,
-                              ).withOpacity(0.5),
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: AppColors.primary
+                                  .withValues(alpha: 0.5),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -334,7 +334,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     width: 24,
                                     height: 24,
                                     child: CircularProgressIndicator(
-                                      color: Color(0xFF09090B),
+                                      color: Colors.white,
                                       strokeWidth: 2.5,
                                     ),
                                   )
@@ -356,69 +356,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // Divider
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: const Color(0x1AFFFFFF),
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'ATAU DAFTAR DENGAN',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF94A3B8),
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: const Color(0x1AFFFFFF),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Social Buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildSocialButton(
-                                icon: Icons.g_mobiledata,
-                                label: 'Google',
-                                onTap: () {},
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildSocialButton(
-                                icon: Icons.apple,
-                                label: 'Apple',
-                                onTap: () {},
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 40),
-
                         // Login Link
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'Sudah punya akun?',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textSecondary(context),
                                 ),
                               ),
                               TextButton(
@@ -434,7 +381,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF60A5FA),
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -471,21 +418,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF18181B),
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
+            border: Border.all(color: AppColors.border(context), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
               ),
@@ -495,21 +442,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: controller,
             keyboardType: keyboardType,
             obscureText: isPassword ? isObscure : false,
-            style: const TextStyle(
-              color: Color.fromARGB(255, 255, 255, 255),
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
               fontSize: 14,
             ),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: const Color.fromARGB(255, 89, 98, 110).withOpacity(0.4),
+                color: AppColors.textSecondary(context).withValues(alpha: 0.5),
                 fontSize: 14,
               ),
               prefixIcon: Padding(
                 padding: const EdgeInsets.only(left: 16, right: 12),
                 child: Icon(
                   icon,
-                  color: const Color.fromARGB(255, 24, 25, 26),
+                  color: AppColors.textSecondary(context),
                   size: 20,
                 ),
               ),
@@ -518,7 +465,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ? IconButton(
                       icon: Icon(
                         isObscure ? Icons.visibility_off : Icons.visibility,
-                        color: const Color(0xFF94A3B8),
+                        color: AppColors.textSecondary(context),
                         size: 20,
                       ),
                       onPressed: onToggleObscure,
@@ -530,39 +477,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSocialButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF18181B),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFF8FAFC),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 import 'macro_row.dart';
 
 /// Widget card untuk menampilkan ringkasan kalori dan makro
@@ -43,12 +44,14 @@ class CalorieSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: AppColors.border(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(
+              alpha: AppColors.isDark(context) ? 0.4 : 0.1,
+            ),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -63,11 +66,11 @@ class CalorieSummaryCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Ringkasan Kalori",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textSecondary(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -77,9 +80,9 @@ class CalorieSummaryCard extends StatelessWidget {
                     children: [
                       Text(
                         '$konsumsiKalori',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 36,
-                          color: Color(0xFFF8FAFC),
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -87,9 +90,9 @@ class CalorieSummaryCard extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 6, left: 8),
                         child: Text(
                           '/ $targetKalori kcal',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -104,9 +107,9 @@ class CalorieSummaryCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF60A5FA).withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   border: Border.all(
-                    color: const Color(0xFF60A5FA).withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -136,7 +139,9 @@ class CalorieSummaryCard extends StatelessWidget {
           Container(
             height: 12,
             decoration: BoxDecoration(
-              color: const Color(0xFF27272A),
+              color: AppColors.isDark(context)
+                  ? const Color(0xFF27272A)
+                  : const Color(0xFFE2E8F0),
               borderRadius: BorderRadius.circular(6),
             ),
             child: FractionallySizedBox(
@@ -150,7 +155,7 @@ class CalorieSummaryCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF60A5FA).withOpacity(0.4),
+                      color: const Color(0xFF60A5FA).withValues(alpha: 0.4),
                       blurRadius: 12,
                     ),
                   ],
@@ -161,9 +166,9 @@ class CalorieSummaryCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Sisa ${targetKalori - konsumsiKalori} kcal',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.right,

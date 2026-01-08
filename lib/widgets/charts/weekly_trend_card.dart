@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget untuk menampilkan tren mingguan dengan bar chart
 class WeeklyTrendCard extends StatelessWidget {
@@ -20,12 +21,14 @@ class WeeklyTrendCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF18181B),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+          border: Border.all(color: AppColors.border(context), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(
+                alpha: AppColors.isDark(context) ? 0.4 : 0.1,
+              ),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -34,29 +37,13 @@ class WeeklyTrendCard extends StatelessWidget {
         child: Column(
           children: [
             // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Tren Minggu Ini',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFF8FAFC),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {},
-                  child: const Text(
-                    'Lihat Detail',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF93C5FD),
-                    ),
-                  ),
-                ),
-              ],
+            Text(
+              'Tren Minggu Ini',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary(context),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -84,9 +71,11 @@ class WeeklyTrendCard extends StatelessWidget {
                           Expanded(
                             child: Container(
                               width: double.infinity,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF27272A),
-                                borderRadius: BorderRadius.vertical(
+                              decoration: BoxDecoration(
+                                color: AppColors.isDark(context)
+                                    ? const Color(0xFF27272A)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(8),
                                 ),
                               ),
@@ -97,10 +86,10 @@ class WeeklyTrendCard extends StatelessWidget {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: isToday
-                                          ? const Color(0xFF93C5FD)
+                                          ? const Color(0xFF60A5FA)
                                           : const Color(
-                                              0xFF93C5FD,
-                                            ).withOpacity(0.4),
+                                              0xFF60A5FA,
+                                            ).withValues(alpha: 0.4),
                                       borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(8),
                                       ),
@@ -108,8 +97,8 @@ class WeeklyTrendCard extends StatelessWidget {
                                           ? [
                                               BoxShadow(
                                                 color: const Color(
-                                                  0xFF93C5FD,
-                                                ).withOpacity(0.3),
+                                                  0xFF60A5FA,
+                                                ).withValues(alpha: 0.3),
                                                 blurRadius: 15,
                                               ),
                                             ]
@@ -129,8 +118,8 @@ class WeeklyTrendCard extends StatelessWidget {
                                   ? FontWeight.bold
                                   : FontWeight.w500,
                               color: isToday
-                                  ? const Color(0xFF93C5FD)
-                                  : const Color(0xFFA1A1AA),
+                                  ? const Color(0xFF60A5FA)
+                                  : AppColors.textSecondary(context),
                             ),
                           ),
                         ],

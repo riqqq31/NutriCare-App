@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/app_colors.dart';
 
 /// Widget card untuk menampilkan item makanan dengan info nutrisi
 class FoodCard extends StatelessWidget {
@@ -26,30 +29,75 @@ class FoodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = food['image'] as String?;
+    // Check if URL is valid (HTTP/HTTPS) or local file
+    final isNetworkImage =
+        imageUrl != null &&
+        imageUrl.isNotEmpty &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+    final isLocalImage =
+        imageUrl != null &&
+        imageUrl.isNotEmpty &&
+        !imageUrl.startsWith('http') &&
+        File(imageUrl).existsSync();
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF27272A)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon/Image
+          // Food Image
           Container(
-            width: 48,
-            height: 48,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFF27272A),
+              color: AppColors.isDark(context)
+                  ? const Color(0xFF27272A)
+                  : const Color(0xFFE2E8F0),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.restaurant,
-              color: Color(0xFF64748B),
-              size: 24,
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: isNetworkImage
+                ? CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textSecondary(context),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Icon(
+                      Icons.restaurant,
+                      color: AppColors.textSecondary(context),
+                      size: 24,
+                    ),
+                  )
+                : isLocalImage
+                ? Image.file(
+                    File(imageUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.restaurant,
+                      color: AppColors.textSecondary(context),
+                      size: 24,
+                    ),
+                  )
+                : Icon(
+                    Icons.restaurant,
+                    color: AppColors.textSecondary(context),
+                    size: 24,
+                  ),
           ),
           const SizedBox(width: 12),
 
@@ -60,8 +108,8 @@ class FoodCard extends StatelessWidget {
               children: [
                 Text(
                   food['nama'] ?? 'Tanpa Nama',
-                  style: const TextStyle(
-                    color: Color(0xFFF8FAFC),
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -71,8 +119,8 @@ class FoodCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   food['porsi_desc'] ?? '100g',
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 12,
                   ),
                 ),
@@ -86,11 +134,11 @@ class FoodCard extends StatelessWidget {
                       const Color(0xFF3B82F6),
                     ),
                     const SizedBox(width: 8),
-                    _buildSimpleMacro("P: ${_fmt(food['protein'])}g"),
+                    _buildSimpleMacro(context, "P: ${_fmt(food['protein'])}g"),
                     const SizedBox(width: 8),
-                    _buildSimpleMacro("K: ${_fmt(food['karbo'])}g"),
+                    _buildSimpleMacro(context, "K: ${_fmt(food['karbo'])}g"),
                     const SizedBox(width: 8),
-                    _buildSimpleMacro("L: ${_fmt(food['lemak'])}g"),
+                    _buildSimpleMacro(context, "L: ${_fmt(food['lemak'])}g"),
                   ],
                 ),
               ],
@@ -135,7 +183,7 @@ class FoodCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -149,11 +197,11 @@ class FoodCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSimpleMacro(String text) {
+  Widget _buildSimpleMacro(BuildContext context, String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF71717A),
+      style: TextStyle(
+        color: AppColors.textSecondary(context),
         fontSize: 10,
         fontWeight: FontWeight.w500,
       ),

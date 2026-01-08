@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
+import '../core/app_colors.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -105,7 +106,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: AppColors.background(context),
       body: Stack(
         children: [
           // Background Gradient
@@ -117,7 +118,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF60A5FA).withOpacity(0.08),
+                color: AppColors.primary.withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -136,16 +137,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF18181B),
+                            color: AppColors.card(context),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0x0DFFFFFF),
+                              color: AppColors.border(context),
                               width: 1,
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_back,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                             size: 20,
                           ),
                         ),
@@ -169,15 +170,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF18181B),
+                              color: AppColors.card(context),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: const Color(0x0DFFFFFF),
+                                color: AppColors.border(context),
                               ),
                             ),
                             child: const Icon(
                               Icons.lock_reset,
-                              color: Color(0xFF60A5FA),
+                              color: AppColors.primary,
                               size: 40,
                             ),
                           ),
@@ -185,13 +186,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         const SizedBox(height: 24),
 
                         // Title
-                        const Center(
+                        Center(
                           child: Text(
                             'Reset Password',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFF8FAFC),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                         ),
@@ -204,9 +205,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 ? 'Masukkan password baru Anda'
                                 : 'Masukkan username untuk mencari akun',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ),
@@ -229,8 +230,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _findUser,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF60A5FA),
-                                foregroundColor: const Color(0xFF09090B),
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -241,7 +242,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                       width: 24,
                                       height: 24,
                                       child: CircularProgressIndicator(
-                                        color: Color(0xFF09090B),
+                                        color: Colors.white,
                                         strokeWidth: 2.5,
                                       ),
                                     )
@@ -267,10 +268,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF22C55E).withOpacity(0.1),
+                              color: const Color(
+                                0xFF22C55E,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFF22C55E).withOpacity(0.2),
+                                color: const Color(
+                                  0xFF22C55E,
+                                ).withValues(alpha: 0.2),
                               ),
                             ),
                             child: Row(
@@ -328,8 +333,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _resetPassword,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF60A5FA),
-                                foregroundColor: const Color(0xFF09090B),
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -340,7 +345,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                       width: 24,
                                       height: 24,
                                       child: CircularProgressIndicator(
-                                        color: Color(0xFF09090B),
+                                        color: Colors.white,
                                         strokeWidth: 2.5,
                                       ),
                                     )
@@ -372,7 +377,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             child: const Text(
                               'Kembali ke Login',
                               style: TextStyle(
-                                color: Color(0xFF60A5FA),
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -406,36 +411,43 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF18181B),
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+            border: Border.all(color: AppColors.border(context), width: 1),
           ),
           child: TextField(
             controller: controller,
             obscureText: isPassword ? isObscure : false,
-            style: const TextStyle(color: Color(0xFFF8FAFC), fontSize: 14),
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
+              fontSize: 14,
+            ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+              hintStyle: TextStyle(color: AppColors.textSecondary(context)),
               prefixIcon: Padding(
                 padding: const EdgeInsets.only(left: 16, right: 12),
-                child: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
+                child: Icon(
+                  icon,
+                  color: AppColors.textSecondary(context),
+                  size: 20,
+                ),
               ),
               prefixIconConstraints: const BoxConstraints(minWidth: 48),
               suffixIcon: isPassword
                   ? IconButton(
                       icon: Icon(
                         isObscure ? Icons.visibility_off : Icons.visibility,
-                        color: const Color(0xFF94A3B8),
+                        color: AppColors.textSecondary(context),
                         size: 20,
                       ),
                       onPressed: onToggleObscure,

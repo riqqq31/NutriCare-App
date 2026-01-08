@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget untuk menampilkan artikel featured/utama
 class FeaturedArticleCard extends StatelessWidget {
@@ -18,12 +19,12 @@ class FeaturedArticleCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Sedang Tren',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFF8FAFC),
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 12),
@@ -38,7 +39,7 @@ class FeaturedArticleCard extends StatelessWidget {
                 border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 4),
                   ),
@@ -54,8 +55,8 @@ class FeaturedArticleCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            const Color(0xFF22C55E).withOpacity(0.6),
-                            const Color(0xFF16A34A).withOpacity(0.8),
+                            const Color(0xFF22C55E).withValues(alpha: 0.6),
+                            const Color(0xFF16A34A).withValues(alpha: 0.8),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -83,7 +84,7 @@ class FeaturedArticleCard extends StatelessWidget {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            const Color(0xFF09090B).withOpacity(0.6),
+                            const Color(0xFF09090B).withValues(alpha: 0.6),
                             const Color(0xFF09090B),
                           ],
                           stops: const [0.0, 0.5, 1.0],
@@ -112,12 +113,12 @@ class FeaturedArticleCard extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: const Color(
                                       0xFF60A5FA,
-                                    ).withOpacity(0.2),
+                                    ).withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                       color: const Color(
                                         0xFF60A5FA,
-                                      ).withOpacity(0.2),
+                                      ).withValues(alpha: 0.2),
                                       width: 1,
                                     ),
                                   ),

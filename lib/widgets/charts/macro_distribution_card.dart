@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget untuk menampilkan distribusi makro dalam bentuk donut chart
 class MacroDistributionCard extends StatelessWidget {
@@ -29,12 +30,14 @@ class MacroDistributionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF18181B),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+          border: Border.all(color: AppColors.border(context), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(
+                alpha: AppColors.isDark(context) ? 0.4 : 0.1,
+              ),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -51,7 +54,7 @@ class MacroDistributionCard extends StatelessWidget {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF93C5FD).withOpacity(0.05),
+                  color: AppColors.primary.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -59,12 +62,12 @@ class MacroDistributionCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Distribusi Makro',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFF8FAFC),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -109,21 +112,21 @@ class MacroDistributionCard extends StatelessWidget {
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
+                            Text(
                               'Total Kalori',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFFA1A1AA),
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               totalCalories.toString(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFF8FAFC),
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                             const Text(
@@ -147,6 +150,7 @@ class MacroDistributionCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildMacroSummaryItem(
+                        context,
                         color: const Color(0xFF818CF8),
                         name: 'PROTEIN',
                         percent: proteinPercent,
@@ -156,6 +160,7 @@ class MacroDistributionCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildMacroSummaryItem(
+                        context,
                         color: const Color(0xFF60A5FA),
                         name: 'KARBO',
                         percent: karboPercent,
@@ -165,6 +170,7 @@ class MacroDistributionCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildMacroSummaryItem(
+                        context,
                         color: const Color(0xFFFB923C),
                         name: 'LEMAK',
                         percent: lemakPercent,
@@ -181,7 +187,8 @@ class MacroDistributionCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMacroSummaryItem({
+  Widget _buildMacroSummaryItem(
+    BuildContext context, {
     required Color color,
     required String name,
     required int percent,
@@ -190,9 +197,11 @@ class MacroDistributionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF27272A).withOpacity(0.5),
+        color: AppColors.isDark(context)
+            ? const Color(0xFF27272A).withValues(alpha: 0.5)
+            : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
       ),
       child: Column(
         children: [
@@ -207,10 +216,10 @@ class MacroDistributionCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFA1A1AA),
+                  color: AppColors.textSecondary(context),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -219,15 +228,18 @@ class MacroDistributionCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$percent%',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFF8FAFC),
+              color: AppColors.textPrimary(context),
             ),
           ),
           Text(
             '${grams.round()}g',
-            style: const TextStyle(fontSize: 12, color: Color(0xFFA1A1AA)),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary(context),
+            ),
           ),
         ],
       ),

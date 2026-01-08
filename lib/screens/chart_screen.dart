@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/app_colors.dart';
 import '../providers/user_provider.dart';
 import '../providers/food_log_provider.dart';
 import '../widgets/charts/macro_distribution_card.dart';
@@ -7,7 +9,10 @@ import '../widgets/charts/nutrient_card.dart';
 import '../widgets/charts/weekly_trend_card.dart';
 
 class ChartScreen extends ConsumerStatefulWidget {
-  const ChartScreen({super.key});
+  final VoidCallback? onBack;
+  final bool showBackButton;
+
+  const ChartScreen({super.key, this.onBack, this.showBackButton = true});
 
   @override
   ConsumerState<ChartScreen> createState() => _ChartScreenState();
@@ -61,7 +66,7 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
     final targetLemak = (userState.targetKalori * 0.30 / 9).round().toDouble();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: AppColors.background(context),
       body: CustomScrollView(
         slivers: [
           // Header
@@ -84,15 +89,15 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
           ),
 
           // Detail Nutrisi Title
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
               child: Text(
                 'Detail Nutrisi',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFF8FAFC),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
             ),
@@ -138,7 +143,7 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
               loading: () => const Padding(
                 padding: EdgeInsets.all(32),
                 child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF93C5FD)),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               ),
               error: (error, stack) => Padding(
@@ -146,7 +151,7 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
                 child: Center(
                   child: Text(
                     'Error: $error',
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppColors.textPrimary(context)),
                   ),
                 ),
               ),
@@ -166,65 +171,77 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
   }
 
   Widget _buildHeader() {
+    final userState = ref.watch(userProvider);
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF09090B).withOpacity(0.9),
-        border: const Border(
-          bottom: BorderSide(color: Color(0x0DFFFFFF), width: 1),
+        color: AppColors.background(context).withValues(alpha: 0.95),
+        border: Border(
+          bottom: BorderSide(color: AppColors.border(context), width: 1),
         ),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          padding: const EdgeInsets.all(16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Back Button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF18181B),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0x0DFFFFFF),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Color(0xFFA1A1AA),
-                    size: 18,
-                  ),
-                ),
-              ),
-
-              // Title
-              const Text(
-                'Grafik Makro',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFF8FAFC),
-                ),
-              ),
-
-              // More Button
+              // Profile Avatar
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF18181B),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+                  border: Border.all(
+                    color: AppColors.isDark(context)
+                        ? const Color(0xFF27272A)
+                        : const Color(0xFFE2E8F0),
+                    width: 2,
+                  ),
+                  gradient: userState.profilePhoto == null
+                      ? const LinearGradient(
+                          colors: [Color(0xFF60A5FA), Color(0xFF3B82F6)],
+                        )
+                      : null,
                 ),
-                child: const Icon(
-                  Icons.more_horiz,
-                  color: Color(0xFFA1A1AA),
-                  size: 22,
+                child: userState.profilePhoto != null
+                    ? ClipOval(
+                        child: Image.file(
+                          File(userState.profilePhoto!),
+                          fit: BoxFit.cover,
+                          width: 40,
+                          height: 40,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.person, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              // Title
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Statistik,',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      'Grafik Makro',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.textPrimary(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -240,9 +257,9 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: const Color(0xFF18181B),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+          border: Border.all(color: AppColors.border(context), width: 1),
         ),
         child: Row(
           children: List.generate(_tabs.length, (index) {
@@ -254,13 +271,15 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF27272A)
+                        ? AppColors.isDark(context)
+                              ? const Color(0xFF27272A)
+                              : const Color(0xFFF1F5F9)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 4,
                             ),
                           ]
@@ -275,8 +294,8 @@ class _ChartScreenState extends ConsumerState<ChartScreen> {
                           ? FontWeight.w600
                           : FontWeight.w500,
                       color: isSelected
-                          ? const Color(0xFFF8FAFC)
-                          : const Color(0xFFA1A1AA),
+                          ? AppColors.textPrimary(context)
+                          : AppColors.textSecondary(context),
                     ),
                   ),
                 ),

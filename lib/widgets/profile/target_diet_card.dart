@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget card untuk target diet dengan kalori dan makro targets
 class TargetDietCard extends StatelessWidget {
@@ -23,26 +24,42 @@ class TargetDietCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Determine background decoration based on theme
+    final boxDecoration = AppColors.isDark(context)
+        ? BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF18181B), Color(0xFF27272A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border(context), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          )
+        : BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border(context), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          );
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF18181B), Color(0xFF27272A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        decoration: boxDecoration,
         child: Stack(
           children: [
             // Background Glow
@@ -54,7 +71,7 @@ class TargetDietCard extends StatelessWidget {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF60A5FA).withOpacity(0.05),
+                  color: AppColors.primary.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -69,20 +86,20 @@ class TargetDietCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Target Diet',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFFF8FAFC),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           aktivitas.split('(').first.trim(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -95,10 +112,10 @@ class TargetDietCard extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF60A5FA).withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(50),
                           border: Border.all(
-                            color: const Color(0xFF60A5FA).withOpacity(0.2),
+                            color: AppColors.primary.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),
@@ -120,12 +137,12 @@ class TargetDietCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Kalori Harian',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     Row(
@@ -133,20 +150,20 @@ class TargetDietCard extends StatelessWidget {
                       children: [
                         Text(
                           targetKalori.toString(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFFF8FAFC),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 4, left: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4, left: 4),
                           child: Text(
                             'kcal',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ),
@@ -160,10 +177,12 @@ class TargetDietCard extends StatelessWidget {
                 Container(
                   height: 10,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
+                    color: AppColors.isDark(context)
+                        ? Colors.black.withValues(alpha: 0.2)
+                        : const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(5),
                     border: Border.all(
-                      color: const Color(0x0DFFFFFF),
+                      color: AppColors.border(context),
                       width: 1,
                     ),
                   ),
@@ -174,11 +193,11 @@ class TargetDietCard extends StatelessWidget {
                       widthFactor: calorieProgress,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF60A5FA),
+                          color: AppColors.primary,
                           borderRadius: BorderRadius.circular(5),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF60A5FA).withOpacity(0.5),
+                              color: AppColors.primary.withValues(alpha: 0.5),
                               blurRadius: 10,
                             ),
                           ],
@@ -194,6 +213,7 @@ class TargetDietCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildMacroTarget(
+                        context,
                         label: 'PROTEIN',
                         value: '${targetProtein}g',
                         color: const Color(0xFF818CF8),
@@ -202,10 +222,11 @@ class TargetDietCard extends StatelessWidget {
                     Container(
                       width: 1,
                       height: 32,
-                      color: const Color(0x0DFFFFFF),
+                      color: AppColors.border(context),
                     ),
                     Expanded(
                       child: _buildMacroTarget(
+                        context,
                         label: 'KARBO',
                         value: '${targetKarbo}g',
                         color: const Color(0xFF60A5FA),
@@ -214,10 +235,11 @@ class TargetDietCard extends StatelessWidget {
                     Container(
                       width: 1,
                       height: 32,
-                      color: const Color(0x0DFFFFFF),
+                      color: AppColors.border(context),
                     ),
                     Expanded(
                       child: _buildMacroTarget(
+                        context,
                         label: 'LEMAK',
                         value: '${targetLemak}g',
                         color: const Color(0xFFFB923C),
@@ -233,7 +255,8 @@ class TargetDietCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMacroTarget({
+  Widget _buildMacroTarget(
+    BuildContext context, {
     required String label,
     required String value,
     required Color color,
@@ -242,10 +265,10 @@ class TargetDietCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF94A3B8),
+            color: AppColors.textSecondary(context),
             letterSpacing: 0.5,
           ),
         ),

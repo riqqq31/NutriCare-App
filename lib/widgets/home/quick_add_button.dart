@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget untuk tombol quick add (Scan Barcode, Foto Makanan, Cari Manual)
 class QuickAddButton extends StatelessWidget {
@@ -21,9 +22,9 @@ class QuickAddButton extends StatelessWidget {
         aspectRatio: 1,
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF18181B),
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -31,13 +32,13 @@ class QuickAddButton extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF60A5FA).withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   border: Border.all(
-                    color: const Color(0xFF60A5FA).withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: const Color(0xFF60A5FA), size: 20),
+                child: Icon(icon, color: AppColors.primary, size: 20),
               ),
               const SizedBox(height: 12),
               Padding(
@@ -45,9 +46,9 @@ class QuickAddButton extends StatelessWidget {
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFFF8FAFC),
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.bold,
                     height: 1.2,
                   ),

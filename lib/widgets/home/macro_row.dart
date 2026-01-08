@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget untuk menampilkan progress makro nutrisi (protein, karbo, lemak)
 class MacroRow extends StatelessWidget {
@@ -25,9 +26,9 @@ class MacroRow extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.1)),
+            border: Border.all(color: color.withValues(alpha: 0.1)),
           ),
           child: Icon(icon, color: color, size: 20),
         ),
@@ -41,9 +42,9 @@ class MacroRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFFF8FAFC),
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -61,7 +62,9 @@ class MacroRow extends StatelessWidget {
               Container(
                 height: 6,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF27272A),
+                  color: AppColors.isDark(context)
+                      ? const Color(0xFF27272A)
+                      : const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: FractionallySizedBox(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget card untuk menampilkan statistik user (berat, tinggi, umur)
 class StatCard extends StatelessWidget {
@@ -18,12 +19,14 @@ class StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(
+              alpha: AppColors.isDark(context) ? 0.4 : 0.1,
+            ),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -33,10 +36,10 @@ class StatCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -46,20 +49,20 @@ class StatCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFF8FAFC),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 2, left: 2),
                 child: Text(
                   unit,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ),

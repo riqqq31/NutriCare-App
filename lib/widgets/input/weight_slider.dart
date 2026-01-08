@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/app_colors.dart';
 
-/// Widget slider untuk memilih berat badan
+/// Widget slider untuk memilih berat badan, sekarang bisa juga diketik
 class WeightSlider extends StatelessWidget {
   final double weight;
+  final TextEditingController controller;
   final double min;
   final double max;
   final ValueChanged<double> onChanged;
@@ -10,8 +13,9 @@ class WeightSlider extends StatelessWidget {
   const WeightSlider({
     super.key,
     required this.weight,
-    this.min = 40,
-    this.max = 150,
+    required this.controller,
+    this.min = 0, // Diubah ke 0 sesuai permintaan/kebutuhan general
+    this.max = 120,
     required this.onChanged,
   });
 
@@ -20,12 +24,14 @@ class WeightSlider extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+        border: Border.all(color: AppColors.border(context), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(
+              alpha: AppColors.isDark(context) ? 0.4 : 0.1,
+            ),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -37,37 +43,63 @@ class WeightSlider extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Berat Badan',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    weight.toStringAsFixed(1),
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF60A5FA),
+              SizedBox(
+                width: 100,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: controller,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d*'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          final val = double.tryParse(value);
+                          if (val != null) {
+                            if (val >= min && val <= max) {
+                              onChanged(val);
+                            }
+                          }
+                        },
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF60A5FA),
+                        ),
+                        textAlign: TextAlign.end,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
                     ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 4, left: 4),
-                    child: Text(
+                    const SizedBox(width: 4),
+                    Text(
                       'kg',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -78,15 +110,20 @@ class WeightSlider extends StatelessWidget {
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
               activeTrackColor: const Color(0xFF60A5FA),
-              inactiveTrackColor: const Color(0xFF27272A),
+              inactiveTrackColor: AppColors.isDark(context)
+                  ? const Color(0xFF27272A)
+                  : const Color(0xFFE2E8F0),
               thumbColor: const Color(0xFF60A5FA),
-              overlayColor: const Color(0xFF60A5FA).withOpacity(0.2),
+              overlayColor: const Color(0xFF60A5FA).withValues(alpha: 0.2),
             ),
             child: Slider(
-              value: weight,
+              value: weight.clamp(min, max),
               min: min,
               max: max,
-              onChanged: onChanged,
+              onChanged: (val) {
+                controller.text = val.toStringAsFixed(1);
+                onChanged(val);
+              },
             ),
           ),
           const SizedBox(height: 8),
@@ -95,11 +132,17 @@ class WeightSlider extends StatelessWidget {
             children: [
               Text(
                 '${min.toInt()}kg',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
               Text(
                 '${max.toInt()}kg',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
             ],
           ),

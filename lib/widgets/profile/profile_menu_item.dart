@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget item menu profil dengan icon, title, subtitle dan arrow
 class ProfileMenuItem extends StatelessWidget {
@@ -22,9 +23,9 @@ class ProfileMenuItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF18181B),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+          border: Border.all(color: AppColors.border(context), width: 1),
         ),
         child: Row(
           children: [
@@ -32,11 +33,17 @@ class ProfileMenuItem extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF27272A),
+                color: AppColors.isDark(context)
+                    ? const Color(0xFF27272A)
+                    : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+                border: Border.all(color: AppColors.border(context), width: 1),
               ),
-              child: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
+              child: Icon(
+                icon,
+                color: AppColors.textSecondary(context),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -45,24 +52,28 @@ class ProfileMenuItem extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFF8FAFC),
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0x7F94A3B8), size: 20),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.textSecondary(context).withValues(alpha: 0.5),
+              size: 20,
+            ),
           ],
         ),
       ),

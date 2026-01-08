@@ -1,16 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/app_colors.dart';
+import '../providers/user_provider.dart';
 import '../services/database_helper.dart';
 import '../widgets/article/article_card.dart';
 import '../widgets/article/featured_article_card.dart';
 
-class ArticleScreen extends StatefulWidget {
+class ArticleScreen extends ConsumerStatefulWidget {
   const ArticleScreen({super.key});
 
   @override
-  State<ArticleScreen> createState() => _ArticleScreenState();
+  ConsumerState<ArticleScreen> createState() => _ArticleScreenState();
 }
 
-class _ArticleScreenState extends State<ArticleScreen> {
+class _ArticleScreenState extends ConsumerState<ArticleScreen> {
   int _selectedCategoryIndex = 0;
 
   Map<String, dynamic>? _featuredArticle;
@@ -64,10 +68,10 @@ class _ArticleScreenState extends State<ArticleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: AppColors.background(context),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF60A5FA)),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : CustomScrollView(
               slivers: [
@@ -91,29 +95,13 @@ class _ArticleScreenState extends State<ArticleScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Artikel Terbaru',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFF8FAFC),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {},
-                          child: const Text(
-                            'Lihat Semua',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF60A5FA),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Artikel Terbaru',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary(context),
+                      ),
                     ),
                   ),
                 ),
@@ -138,10 +126,13 @@ class _ArticleScreenState extends State<ArticleScreen> {
   }
 
   Widget _buildHeader() {
+    final userState = ref.watch(userProvider);
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF09090B),
-        border: Border(bottom: BorderSide(color: Color(0x0DFFFFFF), width: 1)),
+      decoration: BoxDecoration(
+        color: AppColors.background(context),
+        border: Border(
+          bottom: BorderSide(color: AppColors.border(context), width: 1),
+        ),
       ),
       child: SafeArea(
         bottom: false,
@@ -155,19 +146,44 @@ class _ArticleScreenState extends State<ArticleScreen> {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF27272A), width: 2),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF60A5FA), Color(0xFF818CF8)],
+                  border: Border.all(
+                    color: AppColors.isDark(context)
+                        ? const Color(0xFF27272A)
+                        : const Color(0xFFE2E8F0),
+                    width: 2,
                   ),
+                  gradient: userState.profilePhoto == null
+                      ? const LinearGradient(
+                          colors: [Color(0xFF60A5FA), Color(0xFF818CF8)],
+                        )
+                      : null,
                 ),
-                child: const Center(
-                  child: Icon(Icons.person, color: Colors.white, size: 20),
-                ),
+                child: userState.profilePhoto != null
+                    ? ClipOval(
+                        child: Image.file(
+                          File(userState.profilePhoto!),
+                          fit: BoxFit.cover,
+                          width: 40,
+                          height: 40,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      )
+                    : const Center(
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
 
               // Title
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -176,7 +192,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     Text(
@@ -184,26 +200,10 @@ class _ArticleScreenState extends State<ArticleScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFF8FAFC),
+                        color: AppColors.textPrimary(context),
                       ),
                     ),
                   ],
-                ),
-              ),
-
-              // Search Button
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF18181B),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
-                ),
-                child: const Icon(
-                  Icons.search,
-                  color: Color(0xFFF8FAFC),
-                  size: 22,
                 ),
               ),
             ],
@@ -233,16 +233,16 @@ class _ArticleScreenState extends State<ArticleScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF60A5FA)
-                      : const Color(0xFF18181B),
+                      ? AppColors.primary
+                      : AppColors.card(context),
                   borderRadius: BorderRadius.circular(50),
                   border: isSelected
                       ? null
-                      : Border.all(color: const Color(0x0DFFFFFF), width: 1),
+                      : Border.all(color: AppColors.border(context), width: 1),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF60A5FA).withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 15,
                             offset: const Offset(0, 0),
                           ),
@@ -256,7 +256,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                     color: isSelected
                         ? const Color(0xFF09090B)
-                        : const Color(0xFF94A3B8),
+                        : AppColors.textSecondary(context),
                   ),
                 ),
               ),
@@ -277,9 +277,9 @@ class _ArticleScreenState extends State<ArticleScreen> {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF18181B),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: AppColors.card(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -290,7 +290,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF27272A),
+                    color: AppColors.border(context),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -312,7 +312,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                         decoration: BoxDecoration(
                           color: Color(
                             _categoryColors[article['category']] ?? 0xFF60A5FA,
-                          ).withOpacity(0.1),
+                          ).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -332,10 +332,10 @@ class _ArticleScreenState extends State<ArticleScreen> {
                     // Title
                     Text(
                       article['title'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFF8FAFC),
+                        color: AppColors.textPrimary(context),
                         height: 1.3,
                       ),
                     ),
@@ -344,24 +344,24 @@ class _ArticleScreenState extends State<ArticleScreen> {
                     // Read Time
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time,
                           size: 16,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.textSecondary(context),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           article['read_time'] ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Icon(
+                        Icon(
                           Icons.calendar_today,
                           size: 16,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.textSecondary(context),
                         ),
                         const SizedBox(width: 4),
                         const Text(
@@ -374,14 +374,14 @@ class _ArticleScreenState extends State<ArticleScreen> {
                       ],
                     ),
 
-                    const Divider(height: 32, color: Color(0xFF27272A)),
+                    Divider(height: 32, color: AppColors.border(context)),
 
                     // Content
                     Text(
                       '${article['description']}\n\n${article['content'] ?? 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: Color(0xFFF8FAFC),
+                        color: AppColors.textPrimary(context),
                         height: 1.7,
                       ),
                     ),

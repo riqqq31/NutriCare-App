@@ -127,6 +127,7 @@ class FoodLogNotifier extends StateNotifier<FoodLogState> {
     required double karbo,
     required double lemak,
     required double porsi,
+    String? image,
   }) async {
     final userId = ref.read(userProvider).id;
     if (userId == null) return;
@@ -140,6 +141,7 @@ class FoodLogNotifier extends StateNotifier<FoodLogState> {
       'lemak': lemak,
       'porsi': porsi,
       'waktu': DateTime.now().toString(),
+      'image': image,
     };
 
     await DatabaseHelper.instance.insertMakanan(row);
@@ -167,6 +169,31 @@ class FoodLogNotifier extends StateNotifier<FoodLogState> {
   /// Reset state (untuk logout)
   void reset() {
     state = const FoodLogState();
+  }
+
+  /// Hapus satu makanan dari riwayat berdasarkan ID
+  Future<void> deleteFood(int foodId, Map<String, dynamic> food) async {
+    // Delete from database
+    await DatabaseHelper.instance.deleteRiwayatById(foodId);
+
+    // Get values to subtract from totals
+    final kalori = (food['kalori'] as int?) ?? 0;
+    final protein = (food['protein'] as num?)?.toDouble() ?? 0;
+    final karbo = (food['karbo'] as num?)?.toDouble() ?? 0;
+    final lemak = (food['lemak'] as num?)?.toDouble() ?? 0;
+
+    // Update state by removing the item and recalculating totals
+    final updatedList = state.riwayatMakan
+        .where((item) => item['id'] != foodId)
+        .toList();
+
+    state = state.copyWith(
+      konsumsiKalori: (state.konsumsiKalori - kalori).clamp(0, 999999),
+      protein: (state.protein - protein).clamp(0, 999999),
+      karbo: (state.karbo - karbo).clamp(0, 999999),
+      lemak: (state.lemak - lemak).clamp(0, 999999),
+      riwayatMakan: updatedList,
+    );
   }
 }
 

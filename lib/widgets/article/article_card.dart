@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Widget card untuk menampilkan artikel dalam daftar
 class ArticleCard extends StatelessWidget {
@@ -26,12 +27,14 @@ class ArticleCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF18181B),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
+          border: Border.all(color: AppColors.border(context), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(
+                alpha: AppColors.isDark(context) ? 0.4 : 0.1,
+              ),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -45,8 +48,10 @@ class ArticleCard extends StatelessWidget {
               height: 96,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0x0DFFFFFF), width: 1),
-                color: const Color(0xFF27272A),
+                border: Border.all(color: AppColors.border(context), width: 1),
+                color: AppColors.isDark(context)
+                    ? const Color(0xFF27272A)
+                    : const Color(0xFFE2E8F0),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -54,7 +59,9 @@ class ArticleCard extends StatelessWidget {
                   article['image_url'] ?? '',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    color: const Color(0xFF27272A),
+                    color: AppColors.isDark(context)
+                        ? const Color(0xFF27272A)
+                        : const Color(0xFFE2E8F0),
                     child: Icon(
                       Icons.article,
                       color: Color(
@@ -89,9 +96,9 @@ class ArticleCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '• ${article['read_time'] ?? ''}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -103,10 +110,10 @@ class ArticleCard extends StatelessWidget {
                     article['title'],
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFF8FAFC),
+                      color: AppColors.textPrimary(context),
                       height: 1.3,
                     ),
                   ),
@@ -117,9 +124,9 @@ class ArticleCard extends StatelessWidget {
                     article['description'],
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textSecondary(context),
                       height: 1.4,
                     ),
                   ),

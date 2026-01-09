@@ -36,6 +36,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    // Validasi email: harus mengandung @gmail.com atau @email.com
+    if (!user.endsWith('@gmail.com') && !user.endsWith('@email.com')) {
+      _showSnackBar(
+        "Email harus menggunakan @gmail.com atau @email.com",
+        isError: true,
+      );
+      return;
+    }
+
     if (!_agreeToTerms) {
       _showSnackBar("Silakan setujui Syarat & Ketentuan", isError: true);
       return;
@@ -43,6 +52,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (pass.length < 8) {
       _showSnackBar("Password minimal 8 karakter", isError: true);
+      return;
+    }
+
+    // Validasi password: harus kombinasi huruf dan angka
+    final hasLetter = RegExp(r'[a-zA-Z]').hasMatch(pass);
+    final hasNumber = RegExp(r'[0-9]').hasMatch(pass);
+    if (!hasLetter || !hasNumber) {
+      _showSnackBar("Password harus kombinasi huruf dan angka", isError: true);
       return;
     }
 

@@ -45,7 +45,7 @@ class FoodLogNotifier extends StateNotifier<FoodLogState> {
 
   FoodLogNotifier(this.ref) : super(const FoodLogState());
 
-  /// Load riwayat makan dari database untuk hari ini 
+  /// Load riwayat makan dari database untuk hari ini
   Future<void> loadTodayData() async {
     final userId = ref.read(userProvider).id;
     if (userId == null) return;
@@ -144,7 +144,11 @@ class FoodLogNotifier extends StateNotifier<FoodLogState> {
       'image': image,
     };
 
-    await DatabaseHelper.instance.insertMakanan(row);
+    // Insert dan dapatkan ID yang baru dibuat
+    final insertedId = await DatabaseHelper.instance.insertMakanan(row);
+
+    // Tambahkan ID ke row agar swipe-to-delete langsung berfungsi
+    row['id'] = insertedId;
 
     // Update state langsung (reactive!)
     state = state.copyWith(

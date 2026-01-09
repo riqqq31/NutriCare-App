@@ -314,15 +314,15 @@ class DatabaseHelper {
         'content':
             '''Meal prep atau persiapan makanan adalah strategi yang efektif untuk menjaga pola makan sehat sepanjang minggu. Dengan meal prep, Anda dapat menghemat waktu, uang, dan tetap konsisten dengan target nutrisi Anda.
 
-## Langkah-langkah Meal Prep
+ Langkah-langkah Meal Prep
 
-1. **Perencanaan Menu** - Tentukan menu untuk 7 hari ke depan
-2. **Belanja Cerdas** - Beli bahan sesuai kebutuhan, hindari pembelian impulsif
-3. **Persiapan Bahan** - Cuci, potong, dan siapkan semua bahan
-4. **Memasak Batch** - Masak protein, karbohidrat, dan sayuran dalam jumlah besar
-5. **Pembagian Porsi** - Bagi makanan ke dalam container sesuai porsi
+1. Perencanaan Menu - Tentukan menu untuk 7 hari ke depan
+2. Belanja Cerdas - Beli bahan sesuai kebutuhan, hindari pembelian impulsif
+3. Persiapan Bahan - Cuci, potong, dan siapkan semua bahan
+4. Memasak Batch - Masak protein, karbohidrat, dan sayuran dalam jumlah besar
+5. Pembagian Porsi - Bagi makanan ke dalam container sesuai porsi
 
-## Tips Sukses Meal Prep
+ Tips Sukses Meal Prep
 
 - Investasikan pada container berkualitas yang tahan microwave
 - Variasikan bumbu untuk menghindari kebosanan
@@ -345,14 +345,14 @@ Dengan konsistensi, meal prep akan menjadi kebiasaan yang mengubah gaya hidup An
         'content':
             '''Oatmeal telah lama dikenal sebagai sarapan sehat, tetapi manfaatnya jauh lebih besar dari yang banyak orang sadari. Selain kaya serat, oatmeal mengandung avenanthramides - antioksidan unik yang hanya ditemukan dalam gandum.
 
-## Manfaat Oatmeal untuk Jantung
+ Manfaat Oatmeal untuk Jantung
 
-- **Menurunkan Kolesterol** - Beta-glucan dalam oatmeal terbukti menurunkan LDL
-- **Mengontrol Tekanan Darah** - Avenanthramides membantu melebarkan pembuluh darah
-- **Mengurangi Peradangan** - Antioksidan membantu melawan peradangan kronis
-- **Mengatur Gula Darah** - Indeks glikemik rendah menjaga gula darah stabil
+- Menurunkan Kolesterol - Beta-glucan dalam oatmeal terbukti menurunkan LDL
+- Mengontrol Tekanan Darah - Avenanthramides membantu melebarkan pembuluh darah
+- Mengurangi Peradangan - Antioksidan membantu melawan peradangan kronis
+- Mengatur Gula Darah - Indeks glikemik rendah menjaga gula darah stabil
 
-## Cara Konsumsi Terbaik
+ Cara Konsumsi Terbaik
 
 Pilih oatmeal tanpa gula tambahan dan hindari oatmeal instan yang sudah diproses. Tambahkan buah segar, kacang-kacangan, atau madu untuk rasa alami.''',
         'category': 'NUTRISI',
@@ -370,19 +370,19 @@ Pilih oatmeal tanpa gula tambahan dan hindari oatmeal instan yang sudah diproses
         'content':
             '''Rasa lapar di sore hari sering menjadi tantangan terbesar dalam menjaga pola makan sehat. Berikut 5 pilihan snack yang mengenyangkan namun rendah kalori:
 
-## 1. Greek Yogurt dengan Buah (100-150 kcal)
+ 1. Greek Yogurt dengan Buah (100-150 kcal)
 Kaya protein untuk mengenyangkan lebih lama. Tambahkan buah segar untuk serat ekstra.
 
-## 2. Sayuran dengan Hummus (80-120 kcal)
+ 2. Sayuran dengan Hummus (80-120 kcal)
 Wortel, mentimun, atau paprika dengan 2 sendok makan hummus.
 
-## 3. Apel dengan Selai Kacang (150-180 kcal)
+ 3. Apel dengan Selai Kacang (150-180 kcal)
 Kombinasi sempurna serat dan protein. Gunakan 1 sendok makan selai kacang alami.
 
-## 4. Edamame (120 kcal per cangkir)
+ 4. Edamame (120 kcal per cangkir)
 Kaya protein nabati dan mudah disiapkan. Cukup rebus atau kukus.
 
-## 5. Telur Rebus (77 kcal per butir)
+ 5. Telur Rebus (77 kcal per butir)
 Snack klasik yang praktis dan mengenyangkan. Siapkan beberapa di awal minggu.''',
         'category': 'SNACK',
         'read_time': '4 min baca',
@@ -399,18 +399,18 @@ Snack klasik yang praktis dan mengenyangkan. Siapkan beberapa di awal minggu.'''
         'content':
             '''Dada ayam adalah sumber protein favorit untuk diet sehat, tapi sering kali hasilnya kering dan hambar. Berikut teknik untuk mendapatkan ayam yang juicy dan lezat:
 
-## Teknik Marinasi
+ Teknik Marinasi
 
-1. **Brine Sederhana** - Rendam ayam dalam air garam (4 sdm garam per liter air) selama 30 menit
-2. **Marinasi Yogurt** - Yogurt membantu melunakkan daging dan menambah kelembapan
-3. **Marinasi Asam** - Jeruk nipis atau cuka membantu meresapkan bumbu
+1. Brine Sederhana - Rendam ayam dalam air garam (4 sdm garam per liter air) selama 30 menit
+2. Marinasi Yogurt - Yogurt membantu melunakkan daging dan menambah kelembapan
+3. Marinasi Asam - Jeruk nipis atau cuka membantu meresapkan bumbu
 
-## Tips Memasak
+ Tips Memasak
 
-- **Keluarkan dari kulkas 20 menit sebelum dimasak** - Suhu ruangan membantu memasak merata
-- **Jangan terlalu sering membalik** - Biarkan satu sisi matang sempurna
-- **Gunakan termometer daging** - Target suhu internal 74°C
-- **Istirahatkan 5 menit** - Biarkan cairan terdistribusi sebelum dipotong
+- Keluarkan dari kulkas 20 menit sebelum dimasak - Suhu ruangan membantu memasak merata
+- Jangan terlalu sering membalik - Biarkan satu sisi matang sempurna
+- Gunakan termometer daging - Target suhu internal 74°C
+- Istirahatkan 5 menit - Biarkan cairan terdistribusi sebelum dipotong
 
 Dengan teknik ini, ayam Anda akan selalu juicy dan nikmat!''',
         'category': 'RESEP',
@@ -428,21 +428,21 @@ Dengan teknik ini, ayam Anda akan selalu juicy dan nikmat!''',
         'content':
             '''Studi menunjukkan bahwa orang yang mencatat makanan mereka secara konsisten 2x lebih berhasil mencapai target berat badan dibanding yang tidak. Mengapa demikian?
 
-## Manfaat Melacak Makanan
+ Manfaat Melacak Makanan
 
-### 1. Kesadaran Kalori
+ 1. Kesadaran Kalori
 Banyak orang meremehkan asupan kalori harian mereka. Tracking membantu melihat gambaran nyata.
 
-### 2. Identifikasi Pola
+ 2. Identifikasi Pola
 Apakah Anda makan berlebihan saat stress? Atau sering skip sarapan? Tracking mengungkap pola tersembunyi.
 
-### 3. Akuntabilitas
+ 3. Akuntabilitas
 Mengetahui bahwa Anda akan mencatat makanan membuat Anda berpikir dua kali sebelum makan.
 
-### 4. Data untuk Penyesuaian
+ 4. Data untuk Penyesuaian
 Dengan data yang akurat, Anda bisa menyesuaikan rencana makan dengan lebih presisi.
 
-## Tips Tracking Efektif
+ Tips Tracking Efektif
 
 - Catat segera setelah makan
 - Jangan lupa snack dan minuman

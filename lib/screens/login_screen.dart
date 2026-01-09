@@ -121,51 +121,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     const SizedBox(height: 40),
 
-                    // Icon Lock
+                    // App Logo
                     Container(
-                      width: 64,
-                      height: 64,
+                      width: 120,
+                      height: 120,
                       decoration: BoxDecoration(
-                        color: AppColors.card(context),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.border(context),
-                          width: 1,
-                        ),
+                        borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 25,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
-                      child: Stack(
-                        children: [
-                          // Gradient overlay
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.primary.withValues(alpha: 0.1),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          const Center(
-                            child: Icon(
-                              Icons.lock_open,
-                              color: AppColors.primary,
-                              size: 30,
-                            ),
-                          ),
-                        ],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Image.asset(
+                          'assets/logo.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),

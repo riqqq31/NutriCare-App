@@ -216,10 +216,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         if (!_userFound) ...[
                           // Username Field
                           _buildTextField(
-                            label: 'Username / Email',
+                            label: 'Email',
                             controller: _usernameController,
                             icon: Icons.person_outline,
-                            hint: 'Masukkan username atau email',
+                            hint: 'Masukkan email',
                           ),
                           const SizedBox(height: 24),
 

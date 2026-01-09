@@ -130,6 +130,22 @@ class ArticleCard extends StatelessWidget {
                       height: 1.4,
                     ),
                   ),
+                  // Sumber
+                  if (article['sumber'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sumber: ${article['sumber']}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontStyle: FontStyle.italic,
+                        color: AppColors.textSecondary(
+                          context,
+                        ).withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

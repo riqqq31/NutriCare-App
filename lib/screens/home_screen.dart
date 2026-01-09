@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import '../core/app_colors.dart';
 import '../providers/user_provider.dart';
 import '../providers/food_log_provider.dart';
@@ -80,57 +81,101 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildBottomNav() {
+    // Map _currentIndex to SalomonBottomBar index (0->0, 3->1, 2->2, 4->3)
+    int salomonIndex = 0;
+    if (_currentIndex == 0)
+      salomonIndex = 0;
+    else if (_currentIndex == 3)
+      salomonIndex = 1;
+    else if (_currentIndex == 2)
+      salomonIndex = 2;
+    else if (_currentIndex == 4)
+      salomonIndex = 3;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background(context).withValues(alpha: 0.95),
+        color: AppColors.card(context),
         border: Border(
           top: BorderSide(color: AppColors.border(context), width: 1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(Icons.grid_view, "Dashboard", 0),
-              _buildNavItem(Icons.article, "Artikel", 3),
-              const SizedBox(width: 56), // Space for FAB
-              _buildNavItem(Icons.bar_chart, "Statistik", 2),
-              _buildNavItem(Icons.person, "Profil", 4),
+              // Left side nav items
+              Expanded(
+                child: SalomonBottomBar(
+                  currentIndex: salomonIndex < 2 ? salomonIndex : -1,
+                  selectedItemColor: AppColors.primary,
+                  unselectedItemColor: AppColors.textSecondary(context),
+                  onTap: (index) {
+                    setState(() {
+                      if (index == 0)
+                        _currentIndex = 0;
+                      else if (index == 1)
+                        _currentIndex = 3;
+                    });
+                  },
+                  items: [
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.dashboard_outlined),
+                      activeIcon: const Icon(Icons.dashboard),
+                      title: const Text('Home'),
+                      selectedColor: const Color(0xFF3B82F6),
+                    ),
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.article_outlined),
+                      activeIcon: const Icon(Icons.article),
+                      title: const Text('Artikel'),
+                      selectedColor: const Color(0xFFF59E0B),
+                    ),
+                  ],
+                ),
+              ),
+              // Space for FAB
+              const SizedBox(width: 72),
+              // Right side nav items
+              Expanded(
+                child: SalomonBottomBar(
+                  currentIndex: salomonIndex >= 2 ? salomonIndex - 2 : -1,
+                  selectedItemColor: AppColors.primary,
+                  unselectedItemColor: AppColors.textSecondary(context),
+                  onTap: (index) {
+                    setState(() {
+                      if (index == 0)
+                        _currentIndex = 2;
+                      else if (index == 1)
+                        _currentIndex = 4;
+                    });
+                  },
+                  items: [
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.bar_chart_outlined),
+                      activeIcon: const Icon(Icons.bar_chart),
+                      title: const Text('Statistik'),
+                      selectedColor: const Color(0xFF22C55E),
+                    ),
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.person_outline),
+                      activeIcon: const Icon(Icons.person),
+                      title: const Text('Profil'),
+                      selectedColor: const Color(0xFF8B5CF6),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    final isActive = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isActive
-                ? AppColors.primary
-                : AppColors.textSecondary(context),
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              color: isActive
-                  ? AppColors.primary
-                  : AppColors.textSecondary(context),
-            ),
-          ),
-        ],
       ),
     );
   }

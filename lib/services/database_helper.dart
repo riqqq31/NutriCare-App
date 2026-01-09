@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
+  static const int _databaseVersion = 8;
   static Database? _database;
 
   DatabaseHelper._init();
@@ -22,7 +23,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 7, // Version 7: Added profile_photo for users
+      version: _databaseVersion,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -105,6 +106,7 @@ class DatabaseHelper {
         category TEXT NOT NULL,
         read_time TEXT NOT NULL,
         image_url TEXT,
+        sumber TEXT,
         is_featured INTEGER DEFAULT 0,
         created_at TEXT NOT NULL
       )
@@ -229,6 +231,14 @@ class DatabaseHelper {
         // Column may already exist
       }
     }
+    if (oldVersion < 8) {
+      // Version 8: Add sumber column to articles table
+      try {
+        await db.execute('ALTER TABLE articles ADD COLUMN sumber TEXT');
+      } catch (e) {
+        // Column may already exist
+      }
+    }
   }
 
   /// Import nutrition.csv ke master_makanan (with image URLs)
@@ -325,6 +335,7 @@ Dengan konsistensi, meal prep akan menjadi kebiasaan yang mengubah gaya hidup An
         'image_url':
             'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
         'is_featured': 1,
+        'sumber': 'NutriCare Health Team',
         'created_at': DateTime.now().toString(),
       },
       {
@@ -349,6 +360,7 @@ Pilih oatmeal tanpa gula tambahan dan hindari oatmeal instan yang sudah diproses
         'image_url':
             'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400',
         'is_featured': 0,
+        'sumber': 'American Heart Association',
         'created_at': DateTime.now().toString(),
       },
       {
@@ -377,6 +389,7 @@ Snack klasik yang praktis dan mengenyangkan. Siapkan beberapa di awal minggu.'''
         'image_url':
             'https://images.unsplash.com/photo-1568702846914-96b305d2uj89?w=400',
         'is_featured': 0,
+        'sumber': 'NutriCare Health Team',
         'created_at': DateTime.now().toString(),
       },
       {
@@ -405,6 +418,7 @@ Dengan teknik ini, ayam Anda akan selalu juicy dan nikmat!''',
         'image_url':
             'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400',
         'is_featured': 0,
+        'sumber': 'Culinary Institute',
         'created_at': DateTime.now().toString(),
       },
       {
@@ -441,6 +455,7 @@ Mulailah tracking hari ini dan lihat perubahan dalam 30 hari!''',
         'image_url':
             'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400',
         'is_featured': 0,
+        'sumber': 'Journal of Nutrition Research',
         'created_at': DateTime.now().toString(),
       },
     ];

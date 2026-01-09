@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/theme_provider.dart';
+import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/add_food.dart';
 import 'screens/home_screen.dart';
 import 'screens/input_profil_screen.dart';
@@ -31,8 +33,10 @@ class NutriCareApp extends ConsumerWidget {
       title: 'NutriCare',
       debugShowCheckedModeBanner: false,
       theme: isDark ? _darkTheme : _lightTheme,
-      initialRoute: '/login',
+      initialRoute: '/splash',
       routes: {
+        '/splash': (context) => const SplashScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
         '/login': (context) => const LoginScreen(),
         '/input_profil': (context) => const InputProfilScreen(),
         '/home': (context) => const HomeScreen(),

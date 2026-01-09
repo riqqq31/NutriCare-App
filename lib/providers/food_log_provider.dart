@@ -45,7 +45,7 @@ class FoodLogNotifier extends StateNotifier<FoodLogState> {
 
   FoodLogNotifier(this.ref) : super(const FoodLogState());
 
-  /// Load riwayat makan dari database untuk hari ini (OPTIMIZED)
+  /// Load riwayat makan dari database untuk hari ini 
   Future<void> loadTodayData() async {
     final userId = ref.read(userProvider).id;
     if (userId == null) return;

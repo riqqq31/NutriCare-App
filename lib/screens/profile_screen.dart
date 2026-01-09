@@ -258,7 +258,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           // Join Date
           Text(
-            'Bergabung sejak Januari 2024',
+            'Atur profil anda',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
